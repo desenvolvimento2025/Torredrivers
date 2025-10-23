@@ -15,27 +15,27 @@ st.set_page_config(
     layout="wide"
 )
 
+# ESTRUTURAS DE COLUNAS DEFINIDAS GLOBALMENTE
+ESTRUTURA_COLUNAS = [
+    'nome', 'usuario', 'grupo', 'empresa', 'filial', 'status', 'status1', 'status2', 'status3',
+    'com-atend', 'sem-atend', 'com-veiculo', 'sem-veiculo', 'com-check', 'sem-check', 'dirigindo', 'parado',
+    'parado-ate1h', 'parado1ate2h', 'parado-acima2h', 'jornada-acm80', 'jornada-exced', 'sem-folga-acm7d',
+    'sem-folga-acm12d', 'categoria', 'doc-vencendo', 'doc-vencido', 'localiz-atual', 'agenda-pro',
+    'agenda-anda', 'agenda-con', 'projeto-pro', 'projeto-anda', 'projeto-con', 'interj-menor8',
+    'interj-maior8', 'placa1', 'placa2', 'placa3', 'status-log1', 'status-log2'
+]
+
+COLUNAS_PRINCIPAIS = [
+    'nome', 'usuario', 'grupo', 'empresa', 'filial', 'status', 
+    'categoria', 'placa1', 'placa2', 'placa3', 'localiz-atual'
+]
+
 # Classe para gerenciamento de dados
 class GerenciadorMotoristas:
     def __init__(self):
         self.arquivo_excel = "tabela-motoristas.xlsx"
         self.ultima_atualizacao = None
         self.dados = None
-        
-        # DEFININDO AS ESTRUTURAS DE COLUNAS NO __init__
-        self.colunas_principais = [
-            'nome', 'usuario', 'grupo', 'empresa', 'filial', 'status', 
-            'categoria', 'placa1', 'placa2', 'placa3', 'localiz-atual'
-        ]
-        
-        self.estrutura_colunas = [
-            'nome', 'usuario', 'grupo', 'empresa', 'filial', 'status', 'status1', 'status2', 'status3',
-            'com-atend', 'sem-atend', 'com-veiculo', 'sem-veiculo', 'com-check', 'sem-check', 'dirigindo', 'parado',
-            'parado-ate1h', 'parado1ate2h', 'parado-acima2h', 'jornada-acm80', 'jornada-exced', 'sem-folga-acm7d',
-            'sem-folga-acm12d', 'categoria', 'doc-vencendo', 'doc-vencido', 'localiz-atual', 'agenda-pro',
-            'agenda-anda', 'agenda-con', 'projeto-pro', 'projeto-anda', 'projeto-con', 'interj-menor8',
-            'interj-maior8', 'placa1', 'placa2', 'placa3', 'status-log1', 'status-log2'
-        ]
         
     def carregar_dados(self):
         """Carrega dados do arquivo Excel"""
@@ -46,7 +46,7 @@ class GerenciadorMotoristas:
                 return True
             else:
                 # Cria dataframe vazio com a estrutura correta
-                self.dados = pd.DataFrame(columns=self.estrutura_colunas)
+                self.dados = pd.DataFrame(columns=ESTRUTURA_COLUNAS)
                 self.salvar_dados()
                 return True
         except Exception as e:
@@ -69,7 +69,7 @@ class GerenciadorMotoristas:
         """Adiciona novo motorista"""
         try:
             # Garante que todos os campos da estrutura existam
-            for coluna in self.estrutura_colunas:
+            for coluna in ESTRUTURA_COLUNAS:
                 if coluna not in dados_motorista:
                     dados_motorista[coluna] = ""
             
@@ -115,12 +115,12 @@ class GerenciadorMotoristas:
                 return False
             
             # Adiciona colunas faltantes da estrutura completa
-            for coluna in self.estrutura_colunas:
+            for coluna in ESTRUTURA_COLUNAS:
                 if coluna not in dados_importados.columns:
                     dados_importados[coluna] = ""
             
             # Mantém apenas as colunas da estrutura definida
-            dados_importados = dados_importados[self.estrutura_colunas]
+            dados_importados = dados_importados[ESTRUTURA_COLUNAS]
             
             # Remove duplicatas baseado no nome e usuário
             dados_importados = dados_importados.drop_duplicates(subset=['nome', 'usuario'], keep='last')
@@ -212,7 +212,7 @@ if pagina == "📊 Dashboard":
         # Tabela resumo
         st.subheader("📋 Resumo dos Motoristas")
         if not gerenciador.dados.empty:
-            dados_resumo = gerenciador.dados[gerenciador.colunas_principais]
+            dados_resumo = gerenciador.dados[COLUNAS_PRINCIPAIS]
             st.dataframe(dados_resumo, use_container_width=True)
     
     else:
@@ -327,8 +327,8 @@ elif pagina == "📤 Importar Excel":
     # Download do template
     st.subheader("📥 Download do Template")
     
-    # Cria template vazio com estrutura correta
-    template_df = pd.DataFrame(columns=gerenciador.estrutura_colunas)
+    # Cria template vazio com estrutura correta (usando variável global)
+    template_df = pd.DataFrame(columns=ESTRUTURA_COLUNAS)
     
     # Adiciona exemplo de dados
     exemplo = {
@@ -336,7 +336,10 @@ elif pagina == "📤 Importar Excel":
         'usuario': 'joao.silva',
         'empresa': 'Transportes ABC',
         'status': 'Ativo',
-        'categoria': 'D'
+        'categoria': 'D',
+        'filial': 'São Paulo',
+        'com-veiculo': 'Sim',
+        'doc-vencido': 'Não'
     }
     for col, valor in exemplo.items():
         if col in template_df.columns:
@@ -376,6 +379,15 @@ elif pagina == "📤 Importar Excel":
             colunas_encontradas = list(dados_preview.columns)
             st.write(f"**Colunas detectadas:** {', '.join(colunas_encontradas)}")
             
+            # Verifica colunas obrigatórias
+            colunas_necessarias = ['nome', 'usuario', 'empresa']
+            colunas_faltantes = [col for col in colunas_necessarias if col not in dados_preview.columns]
+            
+            if colunas_faltantes:
+                st.error(f"❌ Colunas obrigatórias faltantes: {', '.join(colunas_faltantes)}")
+            else:
+                st.success("✅ Todas as colunas obrigatórias presentes")
+            
             # Opções de importação
             st.subheader("⚙️ Opções de Importação")
             
@@ -394,36 +406,39 @@ elif pagina == "📤 Importar Excel":
             
             # Botão de importação
             if st.button("🚀 Iniciar Importação", type="primary"):
-                with st.spinner("Importando dados..."):
-                    if modo_importacao == "Substituir Tudo":
-                        # Limpa dados atuais
-                        gerenciador.dados = pd.DataFrame(columns=gerenciador.estrutura_colunas)
-                    
-                    success = gerenciador.importar_excel(arquivo)
-                    
-                    if success:
-                        st.success("✅ Importação concluída com sucesso!")
-                        st.balloons()
+                if colunas_faltantes:
+                    st.error("Não é possível importar. Corrija as colunas faltantes primeiro.")
+                else:
+                    with st.spinner("Importando dados..."):
+                        if modo_importacao == "Substituir Tudo":
+                            # Limpa dados atuais
+                            gerenciador.dados = pd.DataFrame(columns=ESTRUTURA_COLUNAS)
                         
-                        # Mostra estatísticas
-                        st.subheader("📈 Estatísticas da Importação")
-                        col1, col2, col3 = st.columns(3)
+                        success = gerenciador.importar_excel(arquivo)
                         
-                        with col1:
-                            st.metric("Total no Sistema", len(gerenciador.dados))
-                        
-                        with col2:
-                            st.metric("Registros Importados", len(dados_preview))
-                        
-                        with col3:
-                            duplicatas = len(dados_preview) - len(dados_preview.drop_duplicates(subset=['nome', 'usuario']))
-                            st.metric("Duplicatas Removidas", duplicatas)
-                        
-                        # Atualiza a página após 2 segundos
-                        time.sleep(2)
-                        st.rerun()
-                    else:
-                        st.error("❌ Erro na importação. Verifique o formato do arquivo.")
+                        if success:
+                            st.success("✅ Importação concluída com sucesso!")
+                            st.balloons()
+                            
+                            # Mostra estatísticas
+                            st.subheader("📈 Estatísticas da Importação")
+                            col1, col2, col3 = st.columns(3)
+                            
+                            with col1:
+                                st.metric("Total no Sistema", len(gerenciador.dados))
+                            
+                            with col2:
+                                st.metric("Registros Importados", len(dados_preview))
+                            
+                            with col3:
+                                duplicatas = len(dados_preview) - len(dados_preview.drop_duplicates(subset=['nome', 'usuario']))
+                                st.metric("Duplicatas Removidas", duplicatas)
+                            
+                            # Atualiza a página após 2 segundos
+                            time.sleep(2)
+                            st.rerun()
+                        else:
+                            st.error("❌ Erro na importação. Verifique o formato do arquivo.")
         
         except Exception as e:
             st.error(f"❌ Erro ao processar arquivo: {e}")
