@@ -25,6 +25,14 @@ class GerenciadorMotoristas:
             'nome', 'usuario', 'grupo', 'empresa', 'filial', 'status', 
             'categoria', 'placa1', 'placa2', 'placa3', 'localiz-atual'
         ]
+        self.estrutura_colunas = [
+            'nome', 'usuario', 'grupo', 'empresa', 'filial', 'status', 'status1', 'status2', 'status3',
+            'com-atend', 'sem-atend', 'com-veiculo', 'sem-veiculo', 'com-check', 'sem-check', 'dirigindo', 'parado',
+            'parado-ate1h', 'parado1ate2h', 'parado-acima2h', 'jornada-acm80', 'jornada-exced', 'sem-folga-acm7d',
+            'sem-folga-acm12d', 'categoria', 'doc-vencendo', 'doc-vencido', 'localiz-atual', 'agenda-pro',
+            'agenda-anda', 'agenda-con', 'projeto-pro', 'projeto-anda', 'projeto-con', 'interj-menor8',
+            'interj-maior8', 'placa1', 'placa2', 'placa3', 'status-log1', 'status-log2'
+        ]
         
     def carregar_dados(self):
         """Carrega dados do arquivo Excel"""
@@ -35,15 +43,7 @@ class GerenciadorMotoristas:
                 return True
             else:
                 # Cria dataframe vazio com a estrutura correta
-                colunas = [
-                    'nome', 'usuario', 'grupo', 'empresa', 'filial', 'status', 'status1', 'status2', 'status3',
-                    'com-atend', 'sem-atend', 'com-veiculo', 'sem-veiculo', 'com-check', 'sem-check', 'dirigindo', 'parado',
-                    'parado-ate1h', 'parado1ate2h', 'parado-acima2h', 'jornada-acm80', 'jornada-exced', 'sem-folga-acm7d',
-                    'sem-folga-acm12d', 'categoria', 'doc-vencendo', 'doc-vencido', 'localiz-atual', 'agenda-pro',
-                    'agenda-anda', 'agenda-con', 'projeto-pro', 'projeto-anda', 'projeto-con', 'interj-menor8',
-                    'interj-maior8', 'placa1', 'placa2', 'placa3', 'status-log1', 'status-log2'
-                ]
-                self.dados = pd.DataFrame(columns=colunas)
+                self.dados = pd.DataFrame(columns=self.estrutura_colunas)
                 self.salvar_dados()
                 return True
         except Exception as e:
@@ -90,6 +90,50 @@ class GerenciadorMotoristas:
         except Exception as e:
             st.error(f"Erro ao excluir motorista: {e}")
             return False
+    
+    def importar_excel(self, arquivo):
+        """Importa dados de arquivo Excel"""
+        try:
+            # Lê o arquivo Excel
+            dados_importados = pd.read_excel(arquivo)
+            
+            # Verifica se as colunas necessárias existem
+            colunas_necessarias = ['nome', 'usuario', 'empresa']
+            colunas_faltantes = [col for col in colunas_necessarias if col not in dados_importados.columns]
+            
+            if colunas_faltantes:
+                st.error(f"Colunas obrigatórias faltantes: {', '.join(colunas_faltantes)}")
+                return False
+            
+            # Adiciona colunas faltantes da estrutura completa
+            for coluna in self.estrutura_colunas:
+                if coluna not in dados_importados.columns:
+                    dados_importados[coluna] = ""
+            
+            # Mantém apenas as colunas da estrutura definida
+            dados_importados = dados_importados[self.estrutura_colunas]
+            
+            # Remove duplicatas baseado no nome e usuário
+            dados_importados = dados_importados.drop_duplicates(subset=['nome', 'usuario'], keep='last')
+            
+            # Se já existem dados, faz merge
+            if not self.dados.empty:
+                # Remove registros existentes com mesmo nome e usuário
+                mask = ~self.dados[['nome', 'usuario']].apply(tuple, 1).isin(
+                    dados_importados[['nome', 'usuario']].apply(tuple, 1)
+                )
+                self.dados = self.dados[mask]
+                
+                # Adiciona novos dados
+                self.dados = pd.concat([self.dados, dados_importados], ignore_index=True)
+            else:
+                self.dados = dados_importados
+            
+            return self.salvar_dados()
+            
+        except Exception as e:
+            st.error(f"Erro ao importar arquivo Excel: {e}")
+            return False
 
 # Inicialização do gerenciador
 @st.cache_resource
@@ -102,7 +146,7 @@ gerenciador = get_gerenciador()
 st.sidebar.title("🚗 Sistema de Motoristas")
 pagina = st.sidebar.selectbox(
     "Navegação",
-    ["📊 Dashboard", "👥 Cadastrar Motorista", "✏️ Editar Motorista", "🗑️ Excluir Motorista", "📋 Lista Completa"]
+    ["📊 Dashboard", "👥 Cadastrar Motorista", "📤 Importar Excel", "✏️ Editar Motorista", "🗑️ Excluir Motorista", "📋 Lista Completa"]
 )
 
 # Auto-atualização a cada 1 hora
@@ -257,6 +301,124 @@ elif pagina == "👥 Cadastrar Motorista":
                     st.error("❌ Erro ao cadastrar motorista")
             else:
                 st.warning("⚠️ Preencha os campos obrigatórios (Nome, Usuário, Empresa)")
+
+# Página: Importar Excel
+elif pagina == "📤 Importar Excel":
+    st.title("📤 Importar Dados via Excel")
+    
+    st.markdown("""
+    ### 📋 Instruções para Importação
+    
+    1. **Preparar o arquivo Excel** com as colunas conforme modelo
+    2. **Colunas obrigatórias**: `nome`, `usuario`, `empresa`
+    3. **Formato suportado**: .xlsx ou .xls
+    4. **Dados duplicados** serão atualizados (baseado em nome + usuário)
+    """)
+    
+    # Download do template
+    st.subheader("📥 Download do Template")
+    
+    # Cria template vazio com estrutura correta
+    template_df = pd.DataFrame(columns=gerenciador.estrutura_colunas)
+    
+    # Adiciona exemplo de dados
+    exemplo = {
+        'nome': 'João Silva',
+        'usuario': 'joao.silva',
+        'empresa': 'Transportes ABC',
+        'status': 'Ativo',
+        'categoria': 'D'
+    }
+    for col, valor in exemplo.items():
+        if col in template_df.columns:
+            template_df.loc[0, col] = valor
+    
+    # Botão para download do template
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+        template_df.to_excel(writer, sheet_name='motoristas', index=False)
+    
+    st.download_button(
+        label="📋 Baixar Template Excel",
+        data=buffer.getvalue(),
+        file_name="template_motoristas.xlsx",
+        mime="application/vnd.ms-excel"
+    )
+    
+    # Upload do arquivo
+    st.subheader("📤 Upload do Arquivo")
+    
+    arquivo = st.file_uploader(
+        "Selecione o arquivo Excel para importar",
+        type=['xlsx', 'xls'],
+        help="Arquivo Excel com dados dos motoristas"
+    )
+    
+    if arquivo is not None:
+        try:
+            # Pré-visualização dos dados
+            st.subheader("👁️ Pré-visualização dos Dados")
+            dados_preview = pd.read_excel(arquivo)
+            st.dataframe(dados_preview.head(10), use_container_width=True)
+            
+            st.info(f"📊 Arquivo contém {len(dados_preview)} registros")
+            
+            # Mostra colunas encontradas
+            colunas_encontradas = list(dados_preview.columns)
+            st.write(f"**Colunas detectadas:** {', '.join(colunas_encontradas)}")
+            
+            # Opções de importação
+            st.subheader("⚙️ Opções de Importação")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                modo_importacao = st.radio(
+                    "Modo de importação:",
+                    ["Adicionar/Atualizar", "Substituir Tudo"],
+                    help="Adicionar/Atualizar: mantém dados existentes e atualiza duplicatas. Substituir Tudo: remove todos os dados atuais."
+                )
+            
+            with col2:
+                if st.checkbox("Mostrar detalhes avançados"):
+                    st.write(f"**Total de registros no sistema atual:** {len(gerenciador.dados) if gerenciador.dados is not None else 0}")
+            
+            # Botão de importação
+            if st.button("🚀 Iniciar Importação", type="primary"):
+                with st.spinner("Importando dados..."):
+                    if modo_importacao == "Substituir Tudo":
+                        # Limpa dados atuais
+                        gerenciador.dados = pd.DataFrame(columns=gerenciador.estrutura_colunas)
+                    
+                    success = gerenciador.importar_excel(arquivo)
+                    
+                    if success:
+                        st.success("✅ Importação concluída com sucesso!")
+                        st.balloons()
+                        
+                        # Mostra estatísticas
+                        st.subheader("📈 Estatísticas da Importação")
+                        col1, col2, col3 = st.columns(3)
+                        
+                        with col1:
+                            st.metric("Total no Sistema", len(gerenciador.dados))
+                        
+                        with col2:
+                            st.metric("Registros Importados", len(dados_preview))
+                        
+                        with col3:
+                            duplicatas = len(dados_preview) - len(dados_preview.drop_duplicates(subset=['nome', 'usuario']))
+                            st.metric("Duplicatas Removidas", duplicatas)
+                        
+                        # Atualiza a página após 2 segundos
+                        time.sleep(2)
+                        st.rerun()
+                    else:
+                        st.error("❌ Erro na importação. Verifique o formato do arquivo.")
+        
+        except Exception as e:
+            st.error(f"❌ Erro ao processar arquivo: {e}")
+            st.info("💡 **Dica:** Verifique se o arquivo está no formato correto e contém as colunas obrigatórias.")
 
 # Página: Editar Motorista
 elif pagina == "✏️ Editar Motorista":
