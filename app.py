@@ -21,10 +21,13 @@ class GerenciadorMotoristas:
         self.arquivo_excel = "tabela-motoristas.xlsx"
         self.ultima_atualizacao = None
         self.dados = None
+        
+        # DEFININDO AS ESTRUTURAS DE COLUNAS NO __init__
         self.colunas_principais = [
             'nome', 'usuario', 'grupo', 'empresa', 'filial', 'status', 
             'categoria', 'placa1', 'placa2', 'placa3', 'localiz-atual'
         ]
+        
         self.estrutura_colunas = [
             'nome', 'usuario', 'grupo', 'empresa', 'filial', 'status', 'status1', 'status2', 'status3',
             'com-atend', 'sem-atend', 'com-veiculo', 'sem-veiculo', 'com-check', 'sem-check', 'dirigindo', 'parado',
@@ -65,6 +68,11 @@ class GerenciadorMotoristas:
     def adicionar_motorista(self, dados_motorista):
         """Adiciona novo motorista"""
         try:
+            # Garante que todos os campos da estrutura existam
+            for coluna in self.estrutura_colunas:
+                if coluna not in dados_motorista:
+                    dados_motorista[coluna] = ""
+            
             novo_registro = pd.DataFrame([dados_motorista])
             self.dados = pd.concat([self.dados, novo_registro], ignore_index=True)
             return self.salvar_dados()
@@ -76,7 +84,8 @@ class GerenciadorMotoristas:
         """Atualiza motorista existente"""
         try:
             for coluna, valor in dados_motorista.items():
-                self.dados.at[index, coluna] = valor
+                if coluna in self.dados.columns:
+                    self.dados.at[index, coluna] = valor
             return self.salvar_dados()
         except Exception as e:
             st.error(f"Erro ao atualizar motorista: {e}")
