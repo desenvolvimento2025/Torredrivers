@@ -756,13 +756,13 @@ elif pagina == "📋 Lista Completa":
         
         with col11:
             filtro_com_atend = st.selectbox(
-                "Com atendimento",
+                "Com Atendimento",
                 ["Todos", "Sim", "Não"]
             )
         
         with col12:
             filtro_com_check = st.selectbox(
-                "Com check",
+                "Com Check",
                 ["Todos", "Sim", "Não"]
             )
         
