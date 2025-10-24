@@ -1,5 +1,9 @@
+import streamlit as st
+import pandas as pd
+from datetime import datetime
+
 # Página: Lista Completa
-elif pagina == "📋 Lista Completa":
+if pagina == "📋 Lista Completa":
     st.title("📋 Lista Completa de Motoristas")
     
     if gerenciador.dados is not None and not gerenciador.dados.empty:
@@ -204,8 +208,11 @@ elif pagina == "📋 Lista Completa":
             if valor_filtro != valor_todos:
                 if coluna in dados_filtrados.columns:
                     if valor_filtro in ["Sim", "Não"]:
-                        return dados_filtrados[coluna] == valor_filtro
+                        # Para colunas booleanas/Sim-Não
+                        valor_bool = True if valor_filtro == "Sim" else False
+                        return dados_filtrados[coluna] == valor_bool
                     else:
+                        # Para colunas com valores específicos
                         return dados_filtrados[coluna] == valor_filtro
             return pd.Series([True] * len(dados_filtrados))
         
@@ -214,28 +221,28 @@ elif pagina == "📋 Lista Completa":
             aplicar_filtro('empresa', filtro_empresa, "Todas"),
             aplicar_filtro('filial', filtro_filial, "Todas"),
             aplicar_filtro('categoria', filtro_categoria, "Todas"),
-            aplicar_filtro('com-veiculo', filtro_veiculo),
+            aplicar_filtro('com-veiculo', filtro_veiculo, "Todos"),
             aplicar_filtro('disponibilidade', filtro_disponibilidade, "Todas"),
             aplicar_filtro('ferias', filtro_ferias, "Todas"),
             aplicar_filtro('licenca', filtro_licenca, "Todas"),
             aplicar_filtro('folga', filtro_folga, "Todas"),
             aplicar_filtro('sobreaviso', filtro_sobreaviso, "Todas"),
             aplicar_filtro('atestado', filtro_atestado, "Todas"),
-            aplicar_filtro('com-atend', filtro_com_atend),
-            aplicar_filtro('com-check', filtro_com_check),
-            aplicar_filtro('dirigindo', filtro_dirigindo),
-            aplicar_filtro('parado-ate1h', filtro_parado_ate1h),
-            aplicar_filtro('parado1ate2h', filtro_parado1ate2h),
-            aplicar_filtro('parado-acima2h', filtro_parado_acima2h),
-            aplicar_filtro('jornada-acm80', filtro_jornada_acm80),
-            aplicar_filtro('jornada-exced', filtro_jornada_exced),
-            aplicar_filtro('sem-folga-acm7d', filtro_sem_folga_acm7d),
-            aplicar_filtro('sem-folga-acm12d', filtro_sem_folga_acm12d),
-            aplicar_filtro('doc-vencendo', filtro_doc_vencendo),
-            aplicar_filtro('doc-vencido', filtro_doc_vencido),
-            aplicar_filtro('associacao-clientes', filtro_associacao_clientes),
-            aplicar_filtro('interj-menor8', filtro_interj_menor8),
-            aplicar_filtro('interj-maior8', filtro_interj_maior8)
+            aplicar_filtro('com-atend', filtro_com_atend, "Todos"),
+            aplicar_filtro('com-check', filtro_com_check, "Todos"),
+            aplicar_filtro('dirigindo', filtro_dirigindo, "Todos"),
+            aplicar_filtro('parado-ate1h', filtro_parado_ate1h, "Todos"),
+            aplicar_filtro('parado1ate2h', filtro_parado1ate2h, "Todos"),
+            aplicar_filtro('parado-acima2h', filtro_parado_acima2h, "Todos"),
+            aplicar_filtro('jornada-acm80', filtro_jornada_acm80, "Todos"),
+            aplicar_filtro('jornada-exced', filtro_jornada_exced, "Todos"),
+            aplicar_filtro('sem-folga-acm7d', filtro_sem_folga_acm7d, "Todos"),
+            aplicar_filtro('sem-folga-acm12d', filtro_sem_folga_acm12d, "Todos"),
+            aplicar_filtro('doc-vencendo', filtro_doc_vencendo, "Todos"),
+            aplicar_filtro('doc-vencido', filtro_doc_vencido, "Todos"),
+            aplicar_filtro('associacao-clientes', filtro_associacao_clientes, "Todos"),
+            aplicar_filtro('interj-menor8', filtro_interj_menor8, "Todos"),
+            aplicar_filtro('interj-maior8', filtro_interj_maior8, "Todos")
         ]
         
         # Combina todos os filtros
