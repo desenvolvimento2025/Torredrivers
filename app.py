@@ -904,7 +904,51 @@ elif pagina == "📋 Lista Completa":
                 dados_filtrados = dados_filtrados[filtro]
         
         st.subheader(f"📊 Resultados ({len(dados_filtrados)} motoristas)")
-        st.dataframe(dados_filtrados, use_container_width=True)
+        
+        # Renomear as colunas para exibição conforme a aba "Editar Motorista"
+        dados_exibicao = dados_filtrados.copy()
+        
+        # Mapeamento dos nomes das colunas para exibição
+        mapeamento_colunas = {
+            'nome': 'Nome completo',
+            'usuario': 'Usuário',
+            'grupo': 'Grupo',
+            'empresa': 'Empresa',
+            'filial': 'Filial',
+            'status': 'Status',
+            'disponibilidade': 'Disponibilidade',
+            'ferias': 'Férias',
+            'licenca': 'Licença',
+            'folga': 'Folga',
+            'sobreaviso': 'Sobreaviso',
+            'atestado': 'Atestado',
+            'com-atend': 'Com Atendimento',
+            'com-veiculo': 'Com Veículo',
+            'com-check': 'Com Check',
+            'dirigindo': 'Dirigindo',
+            'parado-ate1h': 'Parado até 1h',
+            'parado1ate2h': 'Parado 1h a 2h',
+            'parado-acima2h': 'Parado acima 2h',
+            'jornada-acm80': 'Jornada acima 80%',
+            'jornada-exced': 'Jornada Excedida',
+            'sem-folga-acm7d': 'Sem folga a partir 8d',
+            'sem-folga-acm12d': 'Sem folga a partir de 12d',
+            'categoria': 'Categoria CNH',
+            'doc-vencendo': 'Doc Vencendo',
+            'doc-vencido': 'Doc Vencido',
+            'localiz-atual': 'Última localiz pelo veículo',
+            'associacao-clientes': 'Associação a Clientes',
+            'interj-menor8': 'Interjornada < 8h',
+            'interj-maior8': 'Interjornada > 8h',
+            'placa1': 'Placa Principal',
+            'placa2': 'Placa Secundária',
+            'placa3': 'Placa Terciária'
+        }
+        
+        # Renomear as colunas para exibição
+        dados_exibicao = dados_exibicao.rename(columns=mapeamento_colunas)
+        
+        st.dataframe(dados_exibicao, use_container_width=True)
         
         # Botão de download
         if not dados_filtrados.empty:
