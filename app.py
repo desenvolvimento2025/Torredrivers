@@ -188,6 +188,20 @@ if tempo_decorrido.total_seconds() > 3600:  # 1 hora
 if gerenciador.dados is None:
     gerenciador.carregar_dados()
 
+# Função auxiliar para obter valores únicos de colunas com segurança
+def obter_valores_unicos(coluna, dados):
+    """Obtém valores únicos de uma coluna com tratamento de erro"""
+    try:
+        if coluna in dados.columns:
+            valores = dados[coluna].unique().tolist()
+            # Remove valores NaN/None
+            valores = [v for v in valores if pd.notna(v) and v != ""]
+            return valores
+        else:
+            return []
+    except Exception:
+        return []
+
 # Página: Dashboard
 if pagina == "📊 Dashboard":
     st.title("📊 Dashboard de Motoristas")
@@ -670,21 +684,24 @@ elif pagina == "📋 Lista Completa":
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
+            valores_empresa = obter_valores_unicos('empresa', gerenciador.dados)
             filtro_empresa = st.selectbox(
                 "Empresa",
-                ["Todas"] + gerenciador.dados['empresa'].unique().tolist()
+                ["Todas"] + valores_empresa
             )
         
         with col2:
+            valores_filial = obter_valores_unicos('filial', gerenciador.dados)
             filtro_filial = st.selectbox(
                 "Filial",
-                ["Todas"] + gerenciador.dados['filial'].unique().tolist()
+                ["Todas"] + valores_filial
             )
         
         with col3:
+            valores_categoria = obter_valores_unicos('categoria', gerenciador.dados)
             filtro_categoria = st.selectbox(
                 "Categoria",
-                ["Todas"] + gerenciador.dados['categoria'].unique().tolist()
+                ["Todas"] + valores_categoria
             )
         
         with col4:
@@ -697,9 +714,10 @@ elif pagina == "📋 Lista Completa":
         col5, col6, col7, col8 = st.columns(4)
         
         with col5:
+            valores_disponibilidade = obter_valores_unicos('disponibilidade', gerenciador.dados)
             filtro_disponibilidade = st.selectbox(
                 "Disponibilidade",
-                ["Todas"] + gerenciador.dados['disponibilidade'].unique().tolist()
+                ["Todas"] + valores_disponibilidade
             )
         
         with col6:
