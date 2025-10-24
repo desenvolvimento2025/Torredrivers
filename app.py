@@ -17,16 +17,19 @@ st.set_page_config(
 
 # ESTRUTURA ATUALIZADA CONFORME INSTRUÇÕES
 ESTRUTURA_COLUNAS = [
-    'nome', 'usuario', 'grupo', 'empresa', 'filial', 'status', 'status1', 'status2', 'status3',
+    'nome', 'usuario', 'grupo', 'empresa', 'filial', 'status', 
+    'disponibilidade', 'ferias', 'licenca', 'folga', 'sobreaviso', 'atestado',
     'com-atend', 'com-veiculo', 'com-check', 'dirigindo', 
-    'parado-ate1h', 'parado1ate2h', 'parado-acima2h', 'jornada-acm80', 'jornada-exced', 'sem-folga-acm7d',
-    'sem-folga-acm12d', 'categoria', 'doc-vencendo', 'doc-vencido', 'localiz-atual', 
-    'projeto-pro', 'interj-menor8', 'interj-maior8', 'folga', 'sobreaviso', 'atestado'
+    'parado-ate1h', 'parado1ate2h', 'parado-acima2h', 
+    'jornada-acm80', 'jornada-exced', 'sem-folga-acm7d', 'sem-folga-acm12d',
+    'categoria', 'doc-vencendo', 'doc-vencido', 'localiz-atual', 
+    'associacao-clientes', 'interj-menor8', 'interj-maior8'
 ]
 
 COLUNAS_PRINCIPAIS = [
     'nome', 'usuario', 'grupo', 'empresa', 'filial', 'status', 
-    'categoria', 'placa1', 'placa2', 'placa3', 'localiz-atual'
+    'categoria', 'placa1', 'placa2', 'placa3', 'localiz-atual',
+    'disponibilidade', 'com-veiculo'
 ]
 
 # Classe para gerenciamento de dados
@@ -252,49 +255,49 @@ elif pagina == "👥 Cadastrar Motorista":
             placa2 = st.text_input("Placa Secundária")
             placa3 = st.text_input("Placa Terciária")
         
-        st.subheader("Status Operacional")
+        st.subheader("Status do Motorista")
         col3, col4 = st.columns(2)
         
         with col3:
-            com_atend = st.selectbox("Com Atendimento", ["", "Sim", "Não"])
-            com_veiculo = st.selectbox("Com Veículo", ["", "Sim", "Não"])
-            com_check = st.selectbox("Com Check", ["", "Sim", "Não"])
-            dirigindo = st.selectbox("Dirigindo", ["", "Sim", "Não"])
+            disponibilidade = st.selectbox("Disponibilidade*", ["Trabalhando", "Interjornada", "Indisponíveis"])
+            ferias = st.selectbox("Férias*", ["Sim", "Não"])
+            licenca = st.selectbox("Licença*", ["Sim", "Não"])
+            folga = st.selectbox("Folga*", ["Sim", "Não"])
         
         with col4:
-            parado_ate1h = st.selectbox("Parado até 1h", ["", "Sim", "Não"])
-            parado1ate2h = st.selectbox("Parado 1h a 2h", ["", "Sim", "Não"])
-            parado_acima2h = st.selectbox("Parado acima 2h", ["", "Sim", "Não"])
+            sobreaviso = st.selectbox("Sobreaviso*", ["Sim", "Não"])
+            atestado = st.selectbox("Atestado*", ["Sim", "Não"])
+            com_atend = st.selectbox("Com Atendimento", ["", "Sim", "Não"])
+            com_veiculo = st.selectbox("Com Veículo", ["", "Sim", "Não"])
         
-        st.subheader("Jornada e Documentação")
+        st.subheader("Status Operacional")
         col5, col6 = st.columns(2)
         
         with col5:
+            com_check = st.selectbox("Com Check", ["", "Sim", "Não"])
+            dirigindo = st.selectbox("Dirigindo", ["", "Sim", "Não"])
+            parado_ate1h = st.selectbox("Parado até 1h", ["", "Sim", "Não"])
+            parado1ate2h = st.selectbox("Parado 1h a 2h", ["", "Sim", "Não"])
+        
+        with col6:
+            parado_acima2h = st.selectbox("Parado acima 2h", ["", "Sim", "Não"])
             jornada_acm80 = st.selectbox("Jornada acima 80%", ["", "Sim", "Não"])
             jornada_exced = st.selectbox("Jornada Excedida", ["", "Sim", "Não"])
+        
+        st.subheader("Jornada e Documentação")
+        col7, col8 = st.columns(2)
+        
+        with col7:
             sem_folga_acm7d = st.selectbox("Sem folga a partir 8d", ["", "Sim", "Não"])
             sem_folga_acm12d = st.selectbox("Sem folga a partir de 12d", ["", "Sim", "Não"])
             doc_vencendo = st.selectbox("Doc Vencendo", ["", "Sim", "Não"])
             doc_vencido = st.selectbox("Doc Vencido", ["", "Sim", "Não"])
         
-        with col6:
+        with col8:
             localiz_atual = st.text_input("Última localiz pelo veículo")
-            projeto_pro = st.selectbox("Associação a Clientes", ["", "Sim", "Não"])
+            associacao_clientes = st.selectbox("Associação a Clientes", ["", "Sim", "Não"])
             interj_menor8 = st.selectbox("Interjornada < 8h", ["", "Sim", "Não"])
             interj_maior8 = st.selectbox("Interjornada > 8h", ["", "Sim", "Não"])
-        
-        st.subheader("Status do Motorista")
-        col7, col8 = st.columns(2)
-        
-        with col7:
-            status1 = st.selectbox("Disponibilidade", ["", "Trabalhando", "Interjornada", "Indisponíveis"])
-            status2 = st.selectbox("Férias", ["", "Sim", "Não"])
-            status3 = st.selectbox("Licença", ["", "Sim", "Não"])
-        
-        with col8:
-            folga = st.selectbox("Folga", ["", "Sim", "Não"])
-            sobreaviso = st.selectbox("Sobreaviso", ["", "Sim", "Não"])
-            atestado = st.selectbox("Atestado", ["", "Sim", "Não"])
         
         submitted = st.form_submit_button("💾 Cadastrar Motorista")
         
@@ -312,6 +315,14 @@ elif pagina == "👥 Cadastrar Motorista":
                     'placa1': placa1,
                     'placa2': placa2,
                     'placa3': placa3,
+                    
+                    # Status do motorista
+                    'disponibilidade': disponibilidade,
+                    'ferias': ferias,
+                    'licenca': licenca,
+                    'folga': folga,
+                    'sobreaviso': sobreaviso,
+                    'atestado': atestado,
                     
                     # Status operacional
                     'com-atend': com_atend,
@@ -332,21 +343,13 @@ elif pagina == "👥 Cadastrar Motorista":
                     'doc-vencendo': doc_vencendo,
                     'doc-vencido': doc_vencido,
                     
-                    # Localização e projetos
+                    # Localização e associação
                     'localiz-atual': localiz_atual,
-                    'projeto-pro': projeto_pro,
+                    'associacao-clientes': associacao_clientes,
                     
                     # Interjornada
                     'interj-menor8': interj_menor8,
-                    'interj-maior8': interj_maior8,
-                    
-                    # Status adicionais
-                    'status1': status1,
-                    'status2': status2,
-                    'status3': status3,
-                    'folga': folga,
-                    'sobreaviso': sobreaviso,
-                    'atestado': atestado
+                    'interj-maior8': interj_maior8
                 }
                 
                 if gerenciador.adicionar_motorista(dados_motorista):
@@ -384,8 +387,15 @@ elif pagina == "📤 Importar Excel":
         'status': 'ATIVO',
         'grupo': 'Motorista',
         'filial': 'SPO',
+        'disponibilidade': 'Trabalhando',
+        'ferias': 'Não',
+        'licenca': 'Não',
+        'folga': 'Não',
+        'sobreaviso': 'Não',
+        'atestado': 'Não',
         'com-veiculo': 'Sim',
-        'doc-vencido': 'Não'
+        'doc-vencido': 'Não',
+        'associacao-clientes': 'Sim'
     }
     for col, valor in exemplo.items():
         if col in template_df.columns:
@@ -527,26 +537,28 @@ elif pagina == "✏️ Editar Motorista":
                     placa2 = st.text_input("Placa Secundária", value=motorista_data.get('placa2', ''))
                     placa3 = st.text_input("Placa Terciária", value=motorista_data.get('placa3', ''))
                 
-                st.subheader("Status Operacional")
+                st.subheader("Status do Motorista")
                 col3, col4 = st.columns(2)
                 
                 with col3:
+                    disponibilidade = st.selectbox("Disponibilidade*", ["Trabalhando", "Interjornada", "Indisponíveis"],
+                                                 index=["Trabalhando", "Interjornada", "Indisponíveis"].index(motorista_data.get('disponibilidade', 'Trabalhando')))
+                    ferias = st.selectbox("Férias*", ["Sim", "Não"],
+                                        index=["Sim", "Não"].index(motorista_data.get('ferias', 'Não')))
+                    licenca = st.selectbox("Licença*", ["Sim", "Não"],
+                                         index=["Sim", "Não"].index(motorista_data.get('licenca', 'Não')))
+                    folga = st.selectbox("Folga*", ["Sim", "Não"],
+                                       index=["Sim", "Não"].index(motorista_data.get('folga', 'Não')))
+                
+                with col4:
+                    sobreaviso = st.selectbox("Sobreaviso*", ["Sim", "Não"],
+                                            index=["Sim", "Não"].index(motorista_data.get('sobreaviso', 'Não')))
+                    atestado = st.selectbox("Atestado*", ["Sim", "Não"],
+                                          index=["Sim", "Não"].index(motorista_data.get('atestado', 'Não')))
                     com_atend = st.selectbox("Com Atendimento", ["", "Sim", "Não"],
                                            index=["", "Sim", "Não"].index(motorista_data.get('com-atend', '')))
                     com_veiculo = st.selectbox("Com Veículo", ["", "Sim", "Não"],
                                              index=["", "Sim", "Não"].index(motorista_data.get('com-veiculo', '')))
-                    com_check = st.selectbox("Com Check", ["", "Sim", "Não"],
-                                           index=["", "Sim", "Não"].index(motorista_data.get('com-check', '')))
-                    dirigindo = st.selectbox("Dirigindo", ["", "Sim", "Não"],
-                                           index=["", "Sim", "Não"].index(motorista_data.get('dirigindo', '')))
-                
-                with col4:
-                    parado_ate1h = st.selectbox("Parado até 1h", ["", "Sim", "Não"],
-                                              index=["", "Sim", "Não"].index(motorista_data.get('parado-ate1h', '')))
-                    parado1ate2h = st.selectbox("Parado 1h a 2h", ["", "Sim", "Não"],
-                                              index=["", "Sim", "Não"].index(motorista_data.get('parado1ate2h', '')))
-                    parado_acima2h = st.selectbox("Parado acima 2h", ["", "Sim", "Não"],
-                                                index=["", "Sim", "Não"].index(motorista_data.get('parado-acima2h', '')))
                 
                 st.subheader("Informações Adicionais")
                 col5, col6 = st.columns(2)
@@ -557,20 +569,14 @@ elif pagina == "✏️ Editar Motorista":
                                               index=["", "Sim", "Não"].index(motorista_data.get('doc-vencendo', '')))
                     doc_vencido = st.selectbox("Doc Vencido", ["", "Sim", "Não"],
                                              index=["", "Sim", "Não"].index(motorista_data.get('doc-vencido', '')))
-                    status1 = st.selectbox("Disponibilidade", ["", "Trabalhando", "Interjornada", "Indisponíveis"],
-                                         index=["", "Trabalhando", "Interjornada", "Indisponíveis"].index(motorista_data.get('status1', '')))
-                    status2 = st.selectbox("Férias", ["", "Sim", "Não"],
-                                         index=["", "Sim", "Não"].index(motorista_data.get('status2', '')))
-                    status3 = st.selectbox("Licença", ["", "Sim", "Não"],
-                                         index=["", "Sim", "Não"].index(motorista_data.get('status3', '')))
+                    associacao_clientes = st.selectbox("Associação a Clientes", ["", "Sim", "Não"],
+                                                     index=["", "Sim", "Não"].index(motorista_data.get('associacao-clientes', '')))
                 
                 with col6:
-                    folga = st.selectbox("Folga", ["", "Sim", "Não"],
-                                       index=["", "Sim", "Não"].index(motorista_data.get('folga', '')))
-                    sobreaviso = st.selectbox("Sobreaviso", ["", "Sim", "Não"],
-                                            index=["", "Sim", "Não"].index(motorista_data.get('sobreaviso', '')))
-                    atestado = st.selectbox("Atestado", ["", "Sim", "Não"],
-                                          index=["", "Sim", "Não"].index(motorista_data.get('atestado', '')))
+                    interj_menor8 = st.selectbox("Interjornada < 8h", ["", "Sim", "Não"],
+                                               index=["", "Sim", "Não"].index(motorista_data.get('interj-menor8', '')))
+                    interj_maior8 = st.selectbox("Interjornada > 8h", ["", "Sim", "Não"],
+                                               index=["", "Sim", "Não"].index(motorista_data.get('interj-maior8', '')))
                 
                 submitted = st.form_submit_button("💾 Atualizar Motorista")
                 
@@ -587,22 +593,20 @@ elif pagina == "✏️ Editar Motorista":
                             'placa1': placa1,
                             'placa2': placa2,
                             'placa3': placa3,
+                            'disponibilidade': disponibilidade,
+                            'ferias': ferias,
+                            'licenca': licenca,
+                            'folga': folga,
+                            'sobreaviso': sobreaviso,
+                            'atestado': atestado,
                             'com-atend': com_atend,
                             'com-veiculo': com_veiculo,
-                            'com-check': com_check,
-                            'dirigindo': dirigindo,
-                            'parado-ate1h': parado_ate1h,
-                            'parado1ate2h': parado1ate2h,
-                            'parado-acima2h': parado_acima2h,
                             'doc-vencendo': doc_vencendo,
                             'doc-vencido': doc_vencido,
                             'localiz-atual': localiz_atual,
-                            'status1': status1,
-                            'status2': status2,
-                            'status3': status3,
-                            'folga': folga,
-                            'sobreaviso': sobreaviso,
-                            'atestado': atestado
+                            'associacao-clientes': associacao_clientes,
+                            'interj-menor8': interj_menor8,
+                            'interj-maior8': interj_maior8
                         }
                         
                         if gerenciador.atualizar_motorista(index, dados_atualizados):
