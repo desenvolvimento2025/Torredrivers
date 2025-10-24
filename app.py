@@ -663,8 +663,10 @@ elif pagina == "📋 Lista Completa":
     st.title("📋 Lista Completa de Motoristas")
     
     if gerenciador.dados is not None and not gerenciador.dados.empty:
-        # Filtros
+        # Filtros - Layout com múltiplas linhas para organizar todos os filtros
         st.subheader("🔍 Filtros")
+        
+        # Primeira linha de filtros
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
@@ -674,15 +676,15 @@ elif pagina == "📋 Lista Completa":
             )
         
         with col2:
-            filtro_status = st.selectbox(
-                "Status",
-                ["Todos"] + gerenciador.dados['status'].unique().tolist()
+            filtro_filial = st.selectbox(
+                "Filial",
+                ["Todas"] + [f for f in gerenciador.dados['filial'].unique().tolist() if pd.notna(f)]
             )
         
         with col3:
             filtro_categoria = st.selectbox(
                 "Categoria",
-                ["Todas"] + gerenciador.dados['categoria'].unique().tolist()
+                ["Todas"] + [c for c in gerenciador.dados['categoria'].unique().tolist() if pd.notna(c)]
             )
         
         with col4:
@@ -691,20 +693,195 @@ elif pagina == "📋 Lista Completa":
                 ["Todos", "Sim", "Não"]
             )
         
+        # Segunda linha de filtros
+        col5, col6, col7, col8 = st.columns(4)
+        
+        with col5:
+            filtro_disponibilidade = st.selectbox(
+                "Disponibilidade",
+                ["Todas"] + [d for d in gerenciador.dados['disponibilidade'].unique().tolist() if pd.notna(d)]
+            )
+        
+        with col6:
+            filtro_ferias = st.selectbox(
+                "Férias",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        with col7:
+            filtro_licenca = st.selectbox(
+                "Licença",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        with col8:
+            filtro_folga = st.selectbox(
+                "Folga",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        # Terceira linha de filtros
+        col9, col10, col11, col12 = st.columns(4)
+        
+        with col9:
+            filtro_sobreaviso = st.selectbox(
+                "Sobreaviso",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        with col10:
+            filtro_atestado = st.selectbox(
+                "Atestado",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        with col11:
+            filtro_com_atend = st.selectbox(
+                "Com atendimento",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col12:
+            filtro_com_check = st.selectbox(
+                "Com check",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Quarta linha de filtros
+        col13, col14, col15, col16 = st.columns(4)
+        
+        with col13:
+            filtro_dirigindo = st.selectbox(
+                "Dirigindo",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col14:
+            filtro_parado_ate1h = st.selectbox(
+                "Parado até 1h",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col15:
+            filtro_parado1ate2h = st.selectbox(
+                "Parado 1h a 2h",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col16:
+            filtro_parado_acima2h = st.selectbox(
+                "Parado acima 2h",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Quinta linha de filtros
+        col17, col18, col19, col20 = st.columns(4)
+        
+        with col17:
+            filtro_jornada_acm80 = st.selectbox(
+                "Jornada acima 80%",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col18:
+            filtro_jornada_exced = st.selectbox(
+                "Jornada Excedida",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col19:
+            filtro_sem_folga_acm7d = st.selectbox(
+                "Sem folga a partir 8d",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col20:
+            filtro_sem_folga_acm12d = st.selectbox(
+                "Sem folga a partir de 12d",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Sexta linha de filtros
+        col21, col22, col23, col24 = st.columns(4)
+        
+        with col21:
+            filtro_doc_vencendo = st.selectbox(
+                "Doc Vencendo",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col22:
+            filtro_doc_vencido = st.selectbox(
+                "Doc Vencido",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col23:
+            filtro_associacao_clientes = st.selectbox(
+                "Associação a Clientes",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col24:
+            filtro_interj_menor8 = st.selectbox(
+                "Interjornada < 8h",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Sétima linha de filtros
+        col25, col26, col27, col28 = st.columns(4)
+        
+        with col25:
+            filtro_interj_maior8 = st.selectbox(
+                "Interjornada > 8h",
+                ["Todos", "Sim", "Não"]
+            )
+        
         # Aplicar filtros
         dados_filtrados = gerenciador.dados.copy()
         
-        if filtro_empresa != "Todas":
-            dados_filtrados = dados_filtrados[dados_filtrados['empresa'] == filtro_empresa]
+        # Função auxiliar para aplicar filtros
+        def aplicar_filtro(coluna, valor_filtro, valor_todos="Todos"):
+            if valor_filtro != valor_todos:
+                if valor_filtro in ["Sim", "Não"]:
+                    return dados_filtrados[coluna] == valor_filtro
+                else:
+                    return dados_filtrados[coluna] == valor_filtro
+            return True
         
-        if filtro_status != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['status'] == filtro_status]
+        # Aplica todos os filtros
+        filtros = [
+            aplicar_filtro('empresa', filtro_empresa, "Todas"),
+            aplicar_filtro('filial', filtro_filial, "Todas"),
+            aplicar_filtro('categoria', filtro_categoria, "Todas"),
+            aplicar_filtro('com-veiculo', filtro_veiculo),
+            aplicar_filtro('disponibilidade', filtro_disponibilidade, "Todas"),
+            aplicar_filtro('ferias', filtro_ferias, "Todas"),
+            aplicar_filtro('licenca', filtro_licenca, "Todas"),
+            aplicar_filtro('folga', filtro_folga, "Todas"),
+            aplicar_filtro('sobreaviso', filtro_sobreaviso, "Todas"),
+            aplicar_filtro('atestado', filtro_atestado, "Todas"),
+            aplicar_filtro('com-atend', filtro_com_atend),
+            aplicar_filtro('com-check', filtro_com_check),
+            aplicar_filtro('dirigindo', filtro_dirigindo),
+            aplicar_filtro('parado-ate1h', filtro_parado_ate1h),
+            aplicar_filtro('parado1ate2h', filtro_parado1ate2h),
+            aplicar_filtro('parado-acima2h', filtro_parado_acima2h),
+            aplicar_filtro('jornada-acm80', filtro_jornada_acm80),
+            aplicar_filtro('jornada-exced', filtro_jornada_exced),
+            aplicar_filtro('sem-folga-acm7d', filtro_sem_folga_acm7d),
+            aplicar_filtro('sem-folga-acm12d', filtro_sem_folga_acm12d),
+            aplicar_filtro('doc-vencendo', filtro_doc_vencendo),
+            aplicar_filtro('doc-vencido', filtro_doc_vencido),
+            aplicar_filtro('associacao-clientes', filtro_associacao_clientes),
+            aplicar_filtro('interj-menor8', filtro_interj_menor8),
+            aplicar_filtro('interj-maior8', filtro_interj_maior8)
+        ]
         
-        if filtro_categoria != "Todas":
-            dados_filtrados = dados_filtrados[dados_filtrados['categoria'] == filtro_categoria]
-        
-        if filtro_veiculo != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['com-veiculo'] == filtro_veiculo]
+        # Combina todos os filtros
+        for filtro in filtros:
+            if isinstance(filtro, pd.Series):
+                dados_filtrados = dados_filtrados[filtro]
         
         st.subheader(f"📊 Resultados ({len(dados_filtrados)} motoristas)")
         st.dataframe(dados_filtrados, use_container_width=True)
