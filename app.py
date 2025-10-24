@@ -666,25 +666,36 @@ elif pagina == "📋 Lista Completa":
         # Filtros - Layout com múltiplas linhas para organizar todos os filtros
         st.subheader("🔍 Filtros")
         
+        # Função auxiliar para obter opções únicas de uma coluna
+        def obter_opcoes(coluna, padrao="Todas"):
+            try:
+                if coluna in gerenciador.dados.columns:
+                    valores_unicos = [v for v in gerenciador.dados[coluna].unique() if pd.notna(v) and v != ""]
+                    return [padrao] + sorted(valores_unicos)
+                else:
+                    return [padrao]
+            except:
+                return [padrao]
+        
         # Primeira linha de filtros
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
             filtro_empresa = st.selectbox(
                 "Empresa",
-                ["Todas"] + gerenciador.dados['empresa'].unique().tolist()
+                obter_opcoes('empresa')
             )
         
         with col2:
             filtro_filial = st.selectbox(
                 "Filial",
-                ["Todas"] + [f for f in gerenciador.dados['filial'].unique().tolist() if pd.notna(f)]
+                obter_opcoes('filial')
             )
         
         with col3:
             filtro_categoria = st.selectbox(
                 "Categoria",
-                ["Todas"] + [c for c in gerenciador.dados['categoria'].unique().tolist() if pd.notna(c)]
+                obter_opcoes('categoria')
             )
         
         with col4:
@@ -699,7 +710,7 @@ elif pagina == "📋 Lista Completa":
         with col5:
             filtro_disponibilidade = st.selectbox(
                 "Disponibilidade",
-                ["Todas"] + [d for d in gerenciador.dados['disponibilidade'].unique().tolist() if pd.notna(d)]
+                obter_opcoes('disponibilidade')
             )
         
         with col6:
@@ -843,11 +854,12 @@ elif pagina == "📋 Lista Completa":
         # Função auxiliar para aplicar filtros
         def aplicar_filtro(coluna, valor_filtro, valor_todos="Todos"):
             if valor_filtro != valor_todos:
-                if valor_filtro in ["Sim", "Não"]:
-                    return dados_filtrados[coluna] == valor_filtro
-                else:
-                    return dados_filtrados[coluna] == valor_filtro
-            return True
+                if coluna in dados_filtrados.columns:
+                    if valor_filtro in ["Sim", "Não"]:
+                        return dados_filtrados[coluna] == valor_filtro
+                    else:
+                        return dados_filtrados[coluna] == valor_filtro
+            return pd.Series([True] * len(dados_filtrados))
         
         # Aplica todos os filtros
         filtros = [
@@ -880,7 +892,7 @@ elif pagina == "📋 Lista Completa":
         
         # Combina todos os filtros
         for filtro in filtros:
-            if isinstance(filtro, pd.Series):
+            if isinstance(filtro, pd.Series) and len(filtro) == len(dados_filtrados):
                 dados_filtrados = dados_filtrados[filtro]
         
         st.subheader(f"📊 Resultados ({len(dados_filtrados)} motoristas)")
