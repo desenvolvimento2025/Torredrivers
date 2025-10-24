@@ -1,271 +1,138 @@
-# Página: Lista Completa
-elif pagina == "📋 Lista Completa":
-    st.title("📋 Lista Completa de Motoristas")
+import streamlit as st
+import pandas as pd
+from datetime import datetime
+import sqlite3
+
+# Configuração da página
+st.set_page_config(
+    page_title="Sistema de Gestão",
+    page_icon="📊",
+    layout="wide"
+)
+
+# Função para conectar ao banco de dados
+def init_db():
+    conn = sqlite3.connect('data.db')
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS registros (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+# Inicializar banco de dados
+init_db()
+
+# Sidebar para navegação
+st.sidebar.title("Navegação")
+pagina = st.sidebar.radio(
+    "Selecione a página:",
+    ["🏠 Página Inicial", "📅 Lista Completa", "⚙️ Configurações"]
+)
+
+# Página Inicial
+if pagina == "🏠 Página Inicial":
+    st.title("🏠 Página Inicial")
+    st.write("Bem-vindo ao sistema de gestão!")
     
-    if gerenciador.dados is not None and not gerenciador.dados.empty:
-        # Filtros
-        st.subheader("🔍 Filtros")
+    # Formulário para adicionar registros
+    with st.form("novo_registro"):
+        st.subheader("Adicionar Novo Registro")
+        nome = st.text_input("Nome do registro:")
+        enviar = st.form_submit_button("Adicionar")
         
-        # Primeira linha de filtros
-        col1, col2, col3, col4 = st.columns(4)
+        if enviar and nome:
+            conn = sqlite3.connect('data.db')
+            c = conn.cursor()
+            c.execute("INSERT INTO registros (nome) VALUES (?)", (nome,))
+            conn.commit()
+            conn.close()
+            st.success(f"Registro '{nome}' adicionado com sucesso!")
+            st.rerun()
+
+# Lista Completa
+elif pagina == "📅 Lista Completa":
+    st.title("📅 Lista Completa de Registros")
+    
+    # Carregar dados do banco
+    conn = sqlite3.connect('data.db')
+    df = pd.read_sql_query("SELECT * FROM registros ORDER BY data_criacao DESC", conn)
+    conn.close()
+    
+    if not df.empty:
+        st.dataframe(df, use_container_width=True)
         
+        # Estatísticas
+        col1, col2, col3 = st.columns(3)
         with col1:
-            filtro_empresa = st.selectbox(
-                "Empresa",
-                ["Todas"] + gerenciador.dados['empresa'].unique().tolist()
-            )
-        
+            st.metric("Total de Registros", len(df))
         with col2:
-            filtro_filial = st.selectbox(
-                "Filial",
-                ["Todas"] + gerenciador.dados['filial'].unique().tolist()
-            )
-        
+            st.metric("Registro Mais Antigo", df['data_criacao'].min()[:10])
         with col3:
-            filtro_categoria = st.selectbox(
-                "Categoria",
-                ["Todas"] + gerenciador.dados['categoria'].unique().tolist()
-            )
-        
-        with col4:
-            filtro_veiculo = st.selectbox(
-                "Com Veículo",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Segunda linha de filtros
-        col5, col6, col7, col8 = st.columns(4)
-        
-        with col5:
-            filtro_disponibilidade = st.selectbox(
-                "Disponibilidade",
-                ["Todas"] + gerenciador.dados['disponibilidade'].unique().tolist()
-            )
-        
-        with col6:
-            filtro_ferias = st.selectbox(
-                "Férias",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col7:
-            filtro_licenca = st.selectbox(
-                "Licença",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col8:
-            filtro_folga = st.selectbox(
-                "Folga",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Terceira linha de filtros
-        col9, col10, col11, col12 = st.columns(4)
-        
-        with col9:
-            filtro_sobreaviso = st.selectbox(
-                "Sobreaviso",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col10:
-            filtro_atestado = st.selectbox(
-                "Atestado",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col11:
-            filtro_atendimento = st.selectbox(
-                "Com atendimento",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col12:
-            filtro_check = st.selectbox(
-                "Com check",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Quarta linha de filtros
-        col13, col14, col15, col16 = st.columns(4)
-        
-        with col13:
-            filtro_dirigindo = st.selectbox(
-                "Dirigindo",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col14:
-            filtro_parado_ate1h = st.selectbox(
-                "Parado até 1h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col15:
-            filtro_parado1ate2h = st.selectbox(
-                "Parado 1h a 2h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col16:
-            filtro_parado_acima2h = st.selectbox(
-                "Parado acima 2h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Quinta linha de filtros
-        col17, col18, col19, col20 = st.columns(4)
-        
-        with col17:
-            filtro_jornada80 = st.selectbox(
-                "Jornada acima 80%",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col18:
-            filtro_jornada_exced = st.selectbox(
-                "Jornada Excedida",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col19:
-            filtro_folga8d = st.selectbox(
-                "Sem folga a partir 8d",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col20:
-            filtro_folga12d = st.selectbox(
-                "Sem folga a partir de 12d",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Sexta linha de filtros
-        col21, col22, col23, col24 = st.columns(4)
-        
-        with col21:
-            filtro_doc_vencendo = st.selectbox(
-                "Doc Vencendo",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col22:
-            filtro_doc_vencido = st.selectbox(
-                "Doc Vencido",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col23:
-            filtro_associacao = st.selectbox(
-                "Associação a Clientes",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col24:
-            filtro_interj_menor8 = st.selectbox(
-                "Interjornada < 8h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Sétima linha de filtros
-        col25, col26, col27, col28 = st.columns(4)
-        
-        with col25:
-            filtro_interj_maior8 = st.selectbox(
-                "Interjornada > 8h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Aplicar filtros
-        dados_filtrados = gerenciador.dados.copy()
-        
-        if filtro_empresa != "Todas":
-            dados_filtrados = dados_filtrados[dados_filtrados['empresa'] == filtro_empresa]
-        
-        if filtro_filial != "Todas":
-            dados_filtrados = dados_filtrados[dados_filtrados['filial'] == filtro_filial]
-        
-        if filtro_categoria != "Todas":
-            dados_filtrados = dados_filtrados[dados_filtrados['categoria'] == filtro_categoria]
-        
-        if filtro_veiculo != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['com-veiculo'] == filtro_veiculo]
-        
-        if filtro_disponibilidade != "Todas":
-            dados_filtrados = dados_filtrados[dados_filtrados['disponibilidade'] == filtro_disponibilidade]
-        
-        if filtro_ferias != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['ferias'] == filtro_ferias]
-        
-        if filtro_licenca != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['licenca'] == filtro_licenca]
-        
-        if filtro_folga != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['folga'] == filtro_folga]
-        
-        if filtro_sobreaviso != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['sobreaviso'] == filtro_sobreaviso]
-        
-        if filtro_atestado != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['atestado'] == filtro_atestado]
-        
-        if filtro_atendimento != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['com-atend'] == filtro_atendimento]
-        
-        if filtro_check != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['com-check'] == filtro_check]
-        
-        if filtro_dirigindo != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['dirigindo'] == filtro_dirigindo]
-        
-        if filtro_parado_ate1h != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['parado-ate1h'] == filtro_parado_ate1h]
-        
-        if filtro_parado1ate2h != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['parado1ate2h'] == filtro_parado1ate2h]
-        
-        if filtro_parado_acima2h != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['parado-acima2h'] == filtro_parado_acima2h]
-        
-        if filtro_jornada80 != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['jornada-acm80'] == filtro_jornada80]
-        
-        if filtro_jornada_exced != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['jornada-exced'] == filtro_jornada_exced]
-        
-        if filtro_folga8d != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['sem-folga-acm7d'] == filtro_folga8d]
-        
-        if filtro_folga12d != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['sem-folga-acm12d'] == filtro_folga12d]
-        
-        if filtro_doc_vencendo != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['doc-vencendo'] == filtro_doc_vencendo]
-        
-        if filtro_doc_vencido != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['doc-vencido'] == filtro_doc_vencido]
-        
-        if filtro_associacao != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['associacao-clientes'] == filtro_associacao]
-        
-        if filtro_interj_menor8 != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['interj-menor8'] == filtro_interj_menor8]
-        
-        if filtro_interj_maior8 != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['interj-maior8'] == filtro_interj_maior8]
-        
-        st.subheader(f"📊 Resultados ({len(dados_filtrados)} motoristas)")
-        st.dataframe(dados_filtrados, use_container_width=True)
-        
-        # Botão de download
-        if not dados_filtrados.empty:
-            csv = dados_filtrados.to_csv(index=False)
+            st.metric("Registro Mais Recente", df['data_criacao'].max()[:10])
+            
+        # Opção de exportar
+        if st.button("📤 Exportar para CSV"):
+            csv = df.to_csv(index=False)
             st.download_button(
-                label="📥 Download CSV",
+                label="Baixar CSV",
                 data=csv,
-                file_name=f"motoristas_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                file_name=f"registros_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv"
             )
     else:
-        st.info("Nenhum motorista cadastrado.")
+        st.info("Nenhum registro encontrado. Adicione registros na Página Inicial.")
+
+# Configurações
+elif pagina == "⚙️ Configurações":
+    st.title("⚙️ Configurações")
+    
+    st.subheader("Gerenciamento de Dados")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🗑️ Limpar Todos os Registros", type="secondary"):
+            conn = sqlite3.connect('data.db')
+            c = conn.cursor()
+            c.execute("DELETE FROM registros")
+            conn.commit()
+            conn.close()
+            st.success("Todos os registros foram removidos!")
+            st.rerun()
+    
+    with col2:
+        if st.button("🔄 Recriar Banco de Dados", type="secondary"):
+            init_db()
+            st.success("Banco de dados recriado com sucesso!")
+    
+    st.subheader("Informações do Sistema")
+    st.write(f"**Data e Hora Atual:** {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    st.write("**Versão do Streamlit:**", st.__version__)
+    st.write("**Versão do Pandas:**", pd.__version__)
+
+# Rodapé
+st.sidebar.markdown("---")
+st.sidebar.info("Sistema desenvolvido com Streamlit")
+
+# CSS personalizado
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 2.5rem;
+        color: #1f77b4;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .metric-card {
+        background-color: #f0f2f6;
+        padding: 1rem;
+        border-radius: 10px;
+        text-align: center;
+    }
+</style>
+""", unsafe_allow_html=True)
