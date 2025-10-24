@@ -1,310 +1,179 @@
+# app.py - CÓDIGO COMPLETO PARA STREAMLIT CLOUD
 import streamlit as st
 import pandas as pd
+import sqlite3
 from datetime import datetime
 
-# Página: Lista Completa
-if pagina == "📋 Lista Completa":
-    st.title("📋 Lista Completa de Motoristas")
+# Configuração da página
+st.set_page_config(
+    page_title="Organograma Motoristas Online",
+    page_icon="🚚",
+    layout="wide"
+)
+
+# CSS personalizado
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 2.5rem;
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .card {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin: 10px 0;
+        border-left: 4px solid #3498db;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Título principal
+st.markdown('<div class="main-header">🚚 ORGANOGRAMA DE MOTORISTAS ONLINE</div>', unsafe_allow_html=True)
+st.success("✅ **Sistema funcionando na nuvem!**")
+
+# Inicializar banco de dados
+def init_database():
+    conn = sqlite3.connect('motoristas.db')
     
-    if gerenciador.dados is not None and not gerenciador.dados.empty:
-        # Filtros - Layout com múltiplas linhas para organizar todos os filtros
-        st.subheader("🔍 Filtros")
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS motoristas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            situacao TEXT NOT NULL,
+            status_trabalho TEXT,
+            estado_motorista TEXT,
+            categoria_cnh TEXT,
+            localizacao TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Dados de exemplo
+    motoristas_exemplo = [
+        ('João Silva', 'TRABALHANDO', 'C/ATEND', 'DIRIGINDO', 'D', 'Base Centro'),
+        ('Maria Santos', 'INTERJORNADA', 'S/ATEND', 'PARADO', 'E', 'Casa'),
+        ('Pedro Oliveira', 'TRABALHANDO', 'C/VEICULO', 'Parado até 1h', 'C', 'Base Norte'),
+        ('Ana Costa', 'TRABALHANDO', 'S/VEICULO', 'DIRIGINDO', 'B', 'Base Sul')
+    ]
+    
+    cursor = conn.cursor()
+    cursor.executemany('''
+        INSERT OR IGNORE INTO motoristas (nome, situacao, status_trabalho, estado_motorista, categoria_cnh, localizacao)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', motoristas_exemplo)
+    
+    conn.commit()
+    return conn
+
+# Interface principal
+def main():
+    conn = init_database()
+    
+    # Menu lateral
+    st.sidebar.title("🎛️ Menu")
+    opcao = st.sidebar.radio(
+        "Navegação:",
+        ["📊 Dashboard", "➕ Adicionar Motorista", "📈 Estatísticas"]
+    )
+    
+    # Filtro
+    filtro_situacao = st.sidebar.selectbox(
+        "Filtrar por situação:",
+        ["TODOS", "TRABALHANDO", "INTERJORNADA"]
+    )
+    
+    if opcao == "📊 Dashboard":
+        mostrar_dashboard(conn, filtro_situacao)
+    elif opcao == "➕ Adicionar Motorista":
+        adicionar_motorista(conn)
+    elif opcao == "📈 Estatísticas":
+        mostrar_estatisticas(conn)
+
+def mostrar_dashboard(conn, filtro):
+    st.header("📊 Dashboard de Motoristas")
+    
+    # Buscar dados
+    query = "SELECT * FROM motoristas"
+    if filtro != "TODOS":
+        query += f" WHERE situacao = '{filtro}'"
+    
+    df_motoristas = pd.read_sql(query, conn)
+    
+    # Mostrar cards
+    for _, motorista in df_motoristas.iterrows():
+        cor = "#2ecc71" if motorista['situacao'] == 'TRABALHANDO' else "#3498db"
         
-        # Função auxiliar para obter opções únicas de uma coluna
-        def obter_opcoes(coluna, padrao="Todas"):
-            try:
-                if coluna in gerenciador.dados.columns:
-                    valores_unicos = [v for v in gerenciador.dados[coluna].unique() if pd.notna(v) and v != ""]
-                    return [padrao] + sorted(valores_unicos)
-                else:
-                    return [padrao]
-            except:
-                return [padrao]
-        
-        # Primeira linha de filtros
-        col1, col2, col3, col4 = st.columns(4)
+        st.markdown(f"""
+        <div class="card" style="border-left-color: {cor}">
+            <h3>🚗 {motorista['nome']}</h3>
+            <strong>Situação:</strong> {motorista['situacao']} | 
+            <strong>Status:</strong> {motorista['status_trabalho']}<br>
+            <strong>Estado:</strong> {motorista['estado_motorista']} | 
+            <strong>CNH:</strong> {motorista['categoria_cnh']}<br>
+            <strong>Localização:</strong> {motorista['localizacao']}
+        </div>
+        """, unsafe_allow_html=True)
+
+def adicionar_motorista(conn):
+    st.header("➕ Adicionar Novo Motorista")
+    
+    with st.form("form_motorista"):
+        col1, col2 = st.columns(2)
         
         with col1:
-            filtro_empresa = st.selectbox(
-                "Empresa",
-                obter_opcoes('empresa')
-            )
+            nome = st.text_input("Nome completo")
+            situacao = st.selectbox("Situação", ["TRABALHANDO", "INTERJORNADA"])
+            status_trabalho = st.selectbox("Status", ["C/ATEND", "S/ATEND", "C/VEICULO", "S/VEICULO"])
         
         with col2:
-            filtro_filial = st.selectbox(
-                "Filial",
-                obter_opcoes('filial')
-            )
+            estado = st.selectbox("Estado", ["DIRIGINDO", "PARADO", "Parado até 1h", "Parado até 2h"])
+            categoria_cnh = st.selectbox("CNH", ["A", "B", "C", "D", "E"])
+            localizacao = st.text_input("Localização")
         
-        with col3:
-            filtro_categoria = st.selectbox(
-                "Categoria",
-                obter_opcoes('categoria')
-            )
+        if st.form_submit_button("💾 Salvar Motorista"):
+            if nome:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO motoristas (nome, situacao, status_trabalho, estado_motorista, categoria_cnh, localizacao)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (nome, situacao, status_trabalho, estado, categoria_cnh, localizacao))
+                conn.commit()
+                st.success(f"✅ Motorista {nome} adicionado com sucesso!")
+            else:
+                st.error("❌ Preencha o nome do motorista")
+
+def mostrar_estatisticas(conn):
+    st.header("📈 Estatísticas")
+    
+    df_motoristas = pd.read_sql("SELECT * FROM motoristas", conn)
+    
+    if not df_motoristas.empty:
+        col1, col2, col3, col4 = st.columns(4)
         
-        with col4:
-            filtro_veiculo = st.selectbox(
-                "Com Veículo",
-                ["Todos", "Sim", "Não"]
-            )
+        total = len(df_motoristas)
+        trabalhando = len(df_motoristas[df_motoristas['situacao'] == 'TRABALHANDO'])
+        interjornada = len(df_motoristas[df_motoristas['situacao'] == 'INTERJORNADA'])
         
-        # Segunda linha de filtros
-        col5, col6, col7, col8 = st.columns(4)
+        col1.metric("Total Motoristas", total)
+        col2.metric("Trabalhando", trabalhando)
+        col3.metric("Interjornada", interjornada)
+        col4.metric("Disponibilidade", f"{(trabalhando/total*100):.1f}%")
         
-        with col5:
-            # Filtro de disponibilidade com valores específicos
-            opcoes_disponibilidade = ["Todas", "Trabalhando", "Interjornada", "Indisponíveis"]
-            # Adiciona valores existentes no banco que não estão na lista padrão
-            valores_existentes = obter_opcoes('disponibilidade', "Todas")[1:]  # Remove "Todas"
-            for valor in valores_existentes:
-                if valor not in opcoes_disponibilidade:
-                    opcoes_disponibilidade.append(valor)
-            
-            filtro_disponibilidade = st.selectbox(
-                "Disponibilidade",
-                opcoes_disponibilidade
-            )
+        # Gráfico de distribuição
+        st.subheader("📊 Distribuição por Situação")
+        dist_situacao = df_motoristas['situacao'].value_counts()
+        st.bar_chart(dist_situacao)
         
-        with col6:
-            filtro_ferias = st.selectbox(
-                "Férias",
-                ["Todas", "Sim", "Não"]
-            )
-        
-        with col7:
-            filtro_licenca = st.selectbox(
-                "Licença",
-                ["Todas", "Sim", "Não"]
-            )
-        
-        with col8:
-            filtro_folga = st.selectbox(
-                "Folga",
-                ["Todas", "Sim", "Não"]
-            )
-        
-        # Terceira linha de filtros
-        col9, col10, col11, col12 = st.columns(4)
-        
-        with col9:
-            filtro_sobreaviso = st.selectbox(
-                "Sobreaviso",
-                ["Todas", "Sim", "Não"]
-            )
-        
-        with col10:
-            filtro_atestado = st.selectbox(
-                "Atestado",
-                ["Todas", "Sim", "Não"]
-            )
-        
-        with col11:
-            filtro_com_atend = st.selectbox(
-                "Com Atendimento",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col12:
-            filtro_com_check = st.selectbox(
-                "Com Check",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Quarta linha de filtros
-        col13, col14, col15, col16 = st.columns(4)
-        
-        with col13:
-            filtro_dirigindo = st.selectbox(
-                "Dirigindo",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col14:
-            filtro_parado_ate1h = st.selectbox(
-                "Parado até 1h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col15:
-            filtro_parado1ate2h = st.selectbox(
-                "Parado 1h a 2h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col16:
-            filtro_parado_acima2h = st.selectbox(
-                "Parado acima 2h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Quinta linha de filtros
-        col17, col18, col19, col20 = st.columns(4)
-        
-        with col17:
-            filtro_jornada_acm80 = st.selectbox(
-                "Jornada acima 80%",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col18:
-            filtro_jornada_exced = st.selectbox(
-                "Jornada Excedida",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col19:
-            filtro_sem_folga_acm7d = st.selectbox(
-                "Sem folga a partir 8d",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col20:
-            filtro_sem_folga_acm12d = st.selectbox(
-                "Sem folga a partir de 12d",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Sexta linha de filtros
-        col21, col22, col23, col24 = st.columns(4)
-        
-        with col21:
-            filtro_doc_vencendo = st.selectbox(
-                "Doc Vencendo",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col22:
-            filtro_doc_vencido = st.selectbox(
-                "Doc Vencido",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col23:
-            filtro_associacao_clientes = st.selectbox(
-                "Associação a Clientes",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col24:
-            filtro_interj_menor8 = st.selectbox(
-                "Interjornada < 8h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Sétima linha de filtros
-        col25, col26, col27, col28 = st.columns(4)
-        
-        with col25:
-            filtro_interj_maior8 = st.selectbox(
-                "Interjornada > 8h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Aplicar filtros
-        dados_filtrados = gerenciador.dados.copy()
-        
-        # Função auxiliar para aplicar filtros
-        def aplicar_filtro(coluna, valor_filtro, valor_todos="Todos"):
-            if valor_filtro != valor_todos:
-                if coluna in dados_filtrados.columns:
-                    if valor_filtro in ["Sim", "Não"]:
-                        # Para colunas booleanas/Sim-Não
-                        valor_bool = True if valor_filtro == "Sim" else False
-                        return dados_filtrados[coluna] == valor_bool
-                    else:
-                        # Para colunas com valores específicos
-                        return dados_filtrados[coluna] == valor_filtro
-            return pd.Series([True] * len(dados_filtrados))
-        
-        # Aplica todos os filtros
-        filtros = [
-            aplicar_filtro('empresa', filtro_empresa, "Todas"),
-            aplicar_filtro('filial', filtro_filial, "Todas"),
-            aplicar_filtro('categoria', filtro_categoria, "Todas"),
-            aplicar_filtro('com-veiculo', filtro_veiculo, "Todos"),
-            aplicar_filtro('disponibilidade', filtro_disponibilidade, "Todas"),
-            aplicar_filtro('ferias', filtro_ferias, "Todas"),
-            aplicar_filtro('licenca', filtro_licenca, "Todas"),
-            aplicar_filtro('folga', filtro_folga, "Todas"),
-            aplicar_filtro('sobreaviso', filtro_sobreaviso, "Todas"),
-            aplicar_filtro('atestado', filtro_atestado, "Todas"),
-            aplicar_filtro('com-atend', filtro_com_atend, "Todos"),
-            aplicar_filtro('com-check', filtro_com_check, "Todos"),
-            aplicar_filtro('dirigindo', filtro_dirigindo, "Todos"),
-            aplicar_filtro('parado-ate1h', filtro_parado_ate1h, "Todos"),
-            aplicar_filtro('parado1ate2h', filtro_parado1ate2h, "Todos"),
-            aplicar_filtro('parado-acima2h', filtro_parado_acima2h, "Todos"),
-            aplicar_filtro('jornada-acm80', filtro_jornada_acm80, "Todos"),
-            aplicar_filtro('jornada-exced', filtro_jornada_exced, "Todos"),
-            aplicar_filtro('sem-folga-acm7d', filtro_sem_folga_acm7d, "Todos"),
-            aplicar_filtro('sem-folga-acm12d', filtro_sem_folga_acm12d, "Todos"),
-            aplicar_filtro('doc-vencendo', filtro_doc_vencendo, "Todos"),
-            aplicar_filtro('doc-vencido', filtro_doc_vencido, "Todos"),
-            aplicar_filtro('associacao-clientes', filtro_associacao_clientes, "Todos"),
-            aplicar_filtro('interj-menor8', filtro_interj_menor8, "Todos"),
-            aplicar_filtro('interj-maior8', filtro_interj_maior8, "Todos")
-        ]
-        
-        # Combina todos os filtros
-        for filtro in filtros:
-            if isinstance(filtro, pd.Series) and len(filtro) == len(dados_filtrados):
-                dados_filtrados = dados_filtrados[filtro]
-        
-        st.subheader(f"📊 Resultados ({len(dados_filtrados)} motoristas)")
-        
-        # Renomear as colunas para exibição conforme a aba "Cadastrar Motorista"
-        dados_exibicao = dados_filtrados.copy()
-        
-        # Mapeamento dos nomes das colunas para exibição - EXATAMENTE como na aba de cadastro
-        mapeamento_colunas = {
-            'nome': 'Nome completo*',
-            'usuario': 'Usuário*',
-            'grupo': 'Grupo*',
-            'empresa': 'Empresa*',
-            'filial': 'Filial*',
-            'status': 'Status*',
-            'disponibilidade': 'Disponibilidade*',
-            'ferias': 'Férias*',
-            'licenca': 'Licença*',
-            'folga': 'Folga*',
-            'sobreaviso': 'Sobreaviso*',
-            'atestado': 'Atestado*',
-            'com-atend': 'Com Atendimento',
-            'com-veiculo': 'Com Veículo',
-            'com-check': 'Com Check',
-            'dirigindo': 'Dirigindo',
-            'parado-ate1h': 'Parado até 1h',
-            'parado1ate2h': 'Parado 1h a 2h',
-            'parado-acima2h': 'Parado acima 2h',
-            'jornada-acm80': 'Jornada acima 80%',
-            'jornada-exced': 'Jornada Excedida',
-            'sem-folga-acm7d': 'Sem folga a partir 8d',
-            'sem-folga-acm12d': 'Sem folga a partir de 12d',
-            'categoria': 'Categoria CNH',
-            'doc-vencendo': 'Doc Vencendo',
-            'doc-vencido': 'Doc Vencido',
-            'localiz-atual': 'Última localiz pelo veículo',
-            'associacao-clientes': 'Associação a Clientes',
-            'interj-menor8': 'Interjornada < 8h',
-            'interj-maior8': 'Interjornada > 8h',
-            'placa1': 'Placa Principal',
-            'placa2': 'Placa Secundária',
-            'placa3': 'Placa Terciária'
-        }
-        
-        # Renomear as colunas para exibição
-        dados_exibicao = dados_exibicao.rename(columns=mapeamento_colunas)
-        
-        st.dataframe(dados_exibicao, use_container_width=True)
-        
-        # Botão de download (mantém nomes originais para o CSV)
-        if not dados_filtrados.empty:
-            csv = dados_filtrados.to_csv(index=False)
-            st.download_button(
-                label="📥 Download CSV",
-                data=csv,
-                file_name=f"motoristas_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                mime="text/csv"
-            )
+        # Gráfico de CNH
+        st.subheader("🚦 Distribuição por Categoria CNH")
+        dist_cnh = df_motoristas['categoria_cnh'].value_counts()
+        st.bar_chart(dist_cnh)
     else:
-        st.info("Nenhum motorista cadastrado.")
+        st.warning("Nenhum motorista cadastrado.")
+
+if __name__ == '__main__':
+    main()
