@@ -33,17 +33,24 @@ COLUNAS_PRINCIPAIS = [
     'disponibilidade', 'com-veiculo'
 ]
 
+# ESTRUTURA DA NOVA TABELA CLIENTES
+ESTRUTURA_CLIENTES = [
+    'Cliente', 'Nome', 'Usuario'
+]
+
 # Classe para gerenciamento de dados
 class GerenciadorMotoristas:
     def __init__(self):
         self.arquivo_excel = "tabela-motoristas.xlsx"
         self.ultima_atualizacao = None
         self.dados = None
+        self.dados_clientes = None
         
     def carregar_dados(self):
         """Carrega dados do arquivo Excel"""
         try:
             if os.path.exists(self.arquivo_excel):
+                # Carrega dados dos motoristas
                 self.dados = pd.read_excel(self.arquivo_excel, sheet_name='motoristas')
                 # Garante que todas as colunas existam na ordem correta
                 for coluna in ESTRUTURA_COLUNAS:
@@ -51,11 +58,27 @@ class GerenciadorMotoristas:
                         self.dados[coluna] = ""
                 # Reordena as colunas conforme a estrutura
                 self.dados = self.dados[ESTRUTURA_COLUNAS]
+                
+                # Carrega dados dos clientes
+                try:
+                    self.dados_clientes = pd.read_excel(self.arquivo_excel, sheet_name='clientes')
+                    # Garante que todas as colunas existam na ordem correta
+                    for coluna in ESTRUTURA_CLIENTES:
+                        if coluna not in self.dados_clientes.columns:
+                            self.dados_clientes[coluna] = ""
+                    # Reordena as colunas conforme a estrutura
+                    self.dados_clientes = self.dados_clientes[ESTRUTURA_CLIENTES]
+                except:
+                    # Se não existir a sheet de clientes, cria vazia
+                    self.dados_clientes = pd.DataFrame(columns=ESTRUTURA_CLIENTES)
+                    self.salvar_dados()
+                
                 self.ultima_atualizacao = datetime.now()
                 return True
             else:
                 # Cria dataframe vazio com a estrutura exata
                 self.dados = pd.DataFrame(columns=ESTRUTURA_COLUNAS)
+                self.dados_clientes = pd.DataFrame(columns=ESTRUTURA_CLIENTES)
                 self.salvar_dados()
                 return True
         except Exception as e:
@@ -65,15 +88,23 @@ class GerenciadorMotoristas:
     def salvar_dados(self):
         """Salva dados no arquivo Excel mantendo a estrutura"""
         try:
-            # Garante a ordem correta das colunas
+            # Garante a ordem correta das colunas dos motoristas
             if not self.dados.empty:
                 for coluna in ESTRUTURA_COLUNAS:
                     if coluna not in self.dados.columns:
                         self.dados[coluna] = ""
                 self.dados = self.dados[ESTRUTURA_COLUNAS]
             
+            # Garante a ordem correta das colunas dos clientes
+            if not self.dados_clientes.empty:
+                for coluna in ESTRUTURA_CLIENTES:
+                    if coluna not in self.dados_clientes.columns:
+                        self.dados_clientes[coluna] = ""
+                self.dados_clientes = self.dados_clientes[ESTRUTURA_CLIENTES]
+            
             with pd.ExcelWriter(self.arquivo_excel, engine='openpyxl') as writer:
                 self.dados.to_excel(writer, sheet_name='motoristas', index=False)
+                self.dados_clientes.to_excel(writer, sheet_name='clientes', index=False)
                 # Cria sheet de logs vazia
                 pd.DataFrame().to_excel(writer, sheet_name='logs', index=False)
             return True
@@ -114,6 +145,42 @@ class GerenciadorMotoristas:
             return self.salvar_dados()
         except Exception as e:
             st.error(f"Erro ao excluir motorista: {e}")
+            return False
+    
+    # MÉTODOS PARA CLIENTES
+    def adicionar_cliente(self, dados_cliente):
+        """Adiciona novo cliente"""
+        try:
+            # Garante que todos os campos da estrutura existam
+            dados_completos = {}
+            for coluna in ESTRUTURA_CLIENTES:
+                dados_completos[coluna] = dados_cliente.get(coluna, "")
+            
+            novo_registro = pd.DataFrame([dados_completos])
+            self.dados_clientes = pd.concat([self.dados_clientes, novo_registro], ignore_index=True)
+            return self.salvar_dados()
+        except Exception as e:
+            st.error(f"Erro ao adicionar cliente: {e}")
+            return False
+    
+    def atualizar_cliente(self, index, dados_cliente):
+        """Atualiza cliente existente"""
+        try:
+            for coluna, valor in dados_cliente.items():
+                if coluna in self.dados_clientes.columns:
+                    self.dados_clientes.at[index, coluna] = valor
+            return self.salvar_dados()
+        except Exception as e:
+            st.error(f"Erro ao atualizar cliente: {e}")
+            return False
+    
+    def excluir_cliente(self, index):
+        """Exclui cliente"""
+        try:
+            self.dados_clientes = self.dados_clientes.drop(index).reset_index(drop=True)
+            return self.salvar_dados()
+        except Exception as e:
+            st.error(f"Erro ao excluir cliente: {e}")
             return False
     
     def importar_excel(self, arquivo):
@@ -171,7 +238,7 @@ gerenciador = get_gerenciador()
 st.sidebar.title("🚗 Sistema de Motoristas")
 pagina = st.sidebar.selectbox(
     "Navegação",
-    ["📊 Dashboard", "👥 Cadastrar Motorista", "📤 Importar Excel", "✏️ Editar Motorista", "🗑️ Excluir Motorista", "📋 Lista Completa"]
+    ["📊 Dashboard", "👥 Cadastrar Motorista", "📤 Importar Excel", "✏️ Editar Motorista", "🗑️ Excluir Motorista", "📋 Lista Completa", "👥 Gerenciar Clientes"]
 )
 
 # Auto-atualização a cada 1 hora
@@ -948,6 +1015,184 @@ elif pagina == "📋 Lista Completa":
             )
     else:
         st.info("Nenhum motorista cadastrado.")
+
+# Página: Gerenciar Clientes
+elif pagina == "👥 Gerenciar Clientes":
+    st.title("👥 Gerenciar Clientes")
+    
+    # Subpáginas para clientes
+    subpagina_cliente = st.sidebar.selectbox(
+        "Operações com Clientes",
+        ["📋 Lista de Clientes", "➕ Cadastrar Cliente", "✏️ Editar Cliente", "🗑️ Excluir Cliente"]
+    )
+    
+    # Lista de Clientes
+    if subpagina_cliente == "📋 Lista de Clientes":
+        st.subheader("📋 Lista de Clientes")
+        
+        if gerenciador.dados_clientes is not None and not gerenciador.dados_clientes.empty:
+            st.dataframe(gerenciador.dados_clientes, use_container_width=True)
+            
+            # Estatísticas
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total de Clientes", len(gerenciador.dados_clientes))
+            with col2:
+                clientes_unicos = len(gerenciador.dados_clientes['Cliente'].unique())
+                st.metric("Clientes Únicos", clientes_unicos)
+            with col3:
+                motoristas_associados = len(gerenciador.dados_clientes['Nome'].unique())
+                st.metric("Motoristas Associados", motoristas_associados)
+            
+            # Botão de download
+            csv = gerenciador.dados_clientes.to_csv(index=False)
+            st.download_button(
+                label="📥 Download CSV Clientes",
+                data=csv,
+                file_name=f"clientes_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                mime="text/csv"
+            )
+        else:
+            st.info("Nenhum cliente cadastrado.")
+    
+    # Cadastrar Cliente
+    elif subpagina_cliente == "➕ Cadastrar Cliente":
+        st.subheader("➕ Cadastrar Novo Cliente")
+        
+        with st.form("form_cliente"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                cliente = st.text_input("Nome do Cliente*")
+            
+            with col2:
+                # Obtém lista de motoristas para seleção
+                if gerenciador.dados is not None and not gerenciador.dados.empty:
+                    motoristas_disponiveis = gerenciador.dados['nome'].unique().tolist()
+                    nome_motorista = st.selectbox(
+                        "Selecione o Motorista*",
+                        [""] + motoristas_disponiveis
+                    )
+                    
+                    # Quando seleciona um motorista, preenche automaticamente o usuário
+                    if nome_motorista:
+                        motorista_selecionado = gerenciador.dados[gerenciador.dados['nome'] == nome_motorista].iloc[0]
+                        usuario_motorista = motorista_selecionado['usuario']
+                        st.text_input("Usuário do Motorista", value=usuario_motorista, disabled=True)
+                else:
+                    st.warning("Nenhum motorista cadastrado. Cadastre motoristas primeiro.")
+                    nome_motorista = ""
+                    usuario_motorista = ""
+            
+            submitted = st.form_submit_button("💾 Cadastrar Cliente")
+            
+            if submitted:
+                if cliente and nome_motorista:
+                    dados_cliente = {
+                        'Cliente': cliente,
+                        'Nome': nome_motorista,
+                        'Usuario': usuario_motorista
+                    }
+                    
+                    if gerenciador.adicionar_cliente(dados_cliente):
+                        st.success("✅ Cliente cadastrado com sucesso!")
+                        st.balloons()
+                    else:
+                        st.error("❌ Erro ao cadastrar cliente")
+                else:
+                    st.warning("⚠️ Preencha todos os campos obrigatórios")
+    
+    # Editar Cliente
+    elif subpagina_cliente == "✏️ Editar Cliente":
+        st.subheader("✏️ Editar Cliente")
+        
+        if gerenciador.dados_clientes is not None and not gerenciador.dados_clientes.empty:
+            cliente_selecionado = st.selectbox(
+                "Selecione o cliente para editar",
+                gerenciador.dados_clientes['Cliente'].unique().tolist()
+            )
+            
+            if cliente_selecionado:
+                # Pega todos os registros do cliente selecionado
+                registros_cliente = gerenciador.dados_clientes[gerenciador.dados_clientes['Cliente'] == cliente_selecionado]
+                
+                for index, cliente_data in registros_cliente.iterrows():
+                    with st.form(f"form_edicao_cliente_{index}"):
+                        st.write(f"**Associação:** {cliente_data['Cliente']} - {cliente_data['Nome']}")
+                        
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            novo_cliente = st.text_input("Cliente", value=cliente_data.get('Cliente', ''), key=f"cliente_{index}")
+                        
+                        with col2:
+                            # Obtém lista de motoristas para seleção
+                            if gerenciador.dados is not None and not gerenciador.dados.empty:
+                                motoristas_disponiveis = gerenciador.dados['nome'].unique().tolist()
+                                novo_nome = st.selectbox(
+                                    "Motorista",
+                                    motoristas_disponiveis,
+                                    index=motoristas_disponiveis.index(cliente_data.get('Nome', '')) if cliente_data.get('Nome', '') in motoristas_disponiveis else 0,
+                                    key=f"nome_{index}"
+                                )
+                                
+                                # Quando seleciona um motorista, preenche automaticamente o usuário
+                                if novo_nome:
+                                    motorista_selecionado = gerenciador.dados[gerenciador.dados['nome'] == novo_nome].iloc[0]
+                                    novo_usuario = motorista_selecionado['usuario']
+                                    st.text_input("Usuário", value=novo_usuario, disabled=True, key=f"usuario_{index}")
+                            else:
+                                st.warning("Nenhum motorista cadastrado.")
+                                novo_nome = ""
+                                novo_usuario = ""
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.form_submit_button("💾 Atualizar Cliente"):
+                                if novo_cliente and novo_nome:
+                                    dados_atualizados = {
+                                        'Cliente': novo_cliente,
+                                        'Nome': novo_nome,
+                                        'Usuario': novo_usuario
+                                    }
+                                    
+                                    if gerenciador.atualizar_cliente(index, dados_atualizados):
+                                        st.success("✅ Cliente atualizado com sucesso!")
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Erro ao atualizar cliente")
+                                else:
+                                    st.warning("⚠️ Preencha todos os campos obrigatórios")
+        else:
+            st.info("Nenhum cliente cadastrado.")
+    
+    # Excluir Cliente
+    elif subpagina_cliente == "🗑️ Excluir Cliente":
+        st.subheader("🗑️ Excluir Cliente")
+        
+        if gerenciador.dados_clientes is not None and not gerenciador.dados_clientes.empty:
+            cliente_selecionado = st.selectbox(
+                "Selecione o cliente para excluir",
+                gerenciador.dados_clientes['Cliente'].unique().tolist()
+            )
+            
+            if cliente_selecionado:
+                # Pega todos os registros do cliente selecionado
+                registros_cliente = gerenciador.dados_clientes[gerenciador.dados_clientes['Cliente'] == cliente_selecionado]
+                
+                st.warning(f"⚠️ Confirma a exclusão do cliente '{cliente_selecionado}'?")
+                st.dataframe(registros_cliente, use_container_width=True)
+                
+                if st.button("🗑️ Confirmar Exclusão", type="primary"):
+                    # Exclui todos os registros do cliente
+                    indices_excluir = registros_cliente.index.tolist()
+                    for index in sorted(indices_excluir, reverse=True):
+                        gerenciador.excluir_cliente(index)
+                    
+                    st.success("✅ Cliente excluído com sucesso!")
+                    st.rerun()
+        else:
+            st.info("Nenhum cliente cadastrado.")
 
 # Informações de atualização no sidebar
 st.sidebar.markdown("---")
