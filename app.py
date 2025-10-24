@@ -15,14 +15,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# ESTRUTURA EXATA DA SUA TABELA - MESMA ORDEM E NOMES
+# ESTRUTURA ATUALIZADA CONFORME INSTRUÇÕES
 ESTRUTURA_COLUNAS = [
     'nome', 'usuario', 'grupo', 'empresa', 'filial', 'status', 'status1', 'status2', 'status3',
-    'com-atend', 'sem-atend', 'com-veiculo', 'sem-veiculo', 'com-check', 'sem-check', 'dirigindo', 'parado',
+    'com-atend', 'com-veiculo', 'com-check', 'dirigindo', 
     'parado-ate1h', 'parado1ate2h', 'parado-acima2h', 'jornada-acm80', 'jornada-exced', 'sem-folga-acm7d',
-    'sem-folga-acm12d', 'categoria', 'doc-vencendo', 'doc-vencido', 'localiz-atual', 'agenda-pro',
-    'agenda-anda', 'agenda-con', 'projeto-pro', 'projeto-anda', 'projeto-con', 'interj-menor8',
-    'interj-maior8', 'placa1', 'placa2', 'placa3', 'status-log1', 'status-log2'
+    'sem-folga-acm12d', 'categoria', 'doc-vencendo', 'doc-vencido', 'localiz-atual', 
+    'projeto-pro', 'interj-menor8', 'interj-maior8', 'folga', 'sobreaviso', 'atestado'
 ]
 
 COLUNAS_PRINCIPAIS = [
@@ -197,7 +196,7 @@ if pagina == "📊 Dashboard":
             st.metric("Total de Motoristas", total_motoristas)
         
         with col2:
-            ativos = len(gerenciador.dados[gerenciador.dados['status'] == 'Ativo'])
+            ativos = len(gerenciador.dados[gerenciador.dados['status'] == 'ATIVO'])
             st.metric("Motoristas Ativos", ativos)
         
         with col3:
@@ -242,12 +241,12 @@ elif pagina == "👥 Cadastrar Motorista":
         with col1:
             nome = st.text_input("Nome completo*")
             usuario = st.text_input("Usuário*")
-            grupo = st.text_input("Grupo")
-            empresa = st.text_input("Empresa*")
-            filial = st.text_input("Filial")
+            grupo = st.selectbox("Grupo*", ["Motorista"])
+            empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"])
+            filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"])
         
         with col2:
-            status = st.selectbox("Status*", ["Ativo", "Inativo", "Férias", "Afastado"])
+            status = st.selectbox("Status*", ["ATIVO", "INATIVO"])
             categoria = st.selectbox("Categoria CNH", ["A", "B", "C", "D", "E"])
             placa1 = st.text_input("Placa Principal")
             placa2 = st.text_input("Placa Secundária")
@@ -258,15 +257,11 @@ elif pagina == "👥 Cadastrar Motorista":
         
         with col3:
             com_atend = st.selectbox("Com Atendimento", ["", "Sim", "Não"])
-            sem_atend = st.selectbox("Sem Atendimento", ["", "Sim", "Não"])
             com_veiculo = st.selectbox("Com Veículo", ["", "Sim", "Não"])
-            sem_veiculo = st.selectbox("Sem Veículo", ["", "Sim", "Não"])
             com_check = st.selectbox("Com Check", ["", "Sim", "Não"])
-            sem_check = st.selectbox("Sem Check", ["", "Sim", "Não"])
+            dirigindo = st.selectbox("Dirigindo", ["", "Sim", "Não"])
         
         with col4:
-            dirigindo = st.selectbox("Dirigindo", ["", "Sim", "Não"])
-            parado = st.selectbox("Parado", ["", "Sim", "Não"])
             parado_ate1h = st.selectbox("Parado até 1h", ["", "Sim", "Não"])
             parado1ate2h = st.selectbox("Parado 1h a 2h", ["", "Sim", "Não"])
             parado_acima2h = st.selectbox("Parado acima 2h", ["", "Sim", "Não"])
@@ -275,35 +270,31 @@ elif pagina == "👥 Cadastrar Motorista":
         col5, col6 = st.columns(2)
         
         with col5:
-            jornada_acm80 = st.selectbox("Jornada até 80%", ["", "Sim", "Não"])
+            jornada_acm80 = st.selectbox("Jornada acima 80%", ["", "Sim", "Não"])
             jornada_exced = st.selectbox("Jornada Excedida", ["", "Sim", "Não"])
-            sem_folga_acm7d = st.selectbox("Sem folga até 7d", ["", "Sim", "Não"])
-            sem_folga_acm12d = st.selectbox("Sem folga até 12d", ["", "Sim", "Não"])
+            sem_folga_acm7d = st.selectbox("Sem folga a partir 8d", ["", "Sim", "Não"])
+            sem_folga_acm12d = st.selectbox("Sem folga a partir de 12d", ["", "Sim", "Não"])
             doc_vencendo = st.selectbox("Doc Vencendo", ["", "Sim", "Não"])
             doc_vencido = st.selectbox("Doc Vencido", ["", "Sim", "Não"])
         
         with col6:
-            localiz_atual = st.text_input("Localização Atual")
-            agenda_pro = st.text_input("Agenda Próxima")
-            agenda_anda = st.text_input("Agenda Andamento")
-            agenda_con = st.text_input("Agenda Concluída")
-            projeto_pro = st.text_input("Projeto Próximo")
-            projeto_anda = st.text_input("Projeto Andamento")
-            projeto_con = st.text_input("Projeto Concluído")
+            localiz_atual = st.text_input("Última localiz pelo veículo")
+            projeto_pro = st.selectbox("Associação a Clientes", ["", "Sim", "Não"])
+            interj_menor8 = st.selectbox("Interjornada < 8h", ["", "Sim", "Não"])
+            interj_maior8 = st.selectbox("Interjornada > 8h", ["", "Sim", "Não"])
         
-        st.subheader("Informações Adicionais")
+        st.subheader("Status do Motorista")
         col7, col8 = st.columns(2)
         
         with col7:
-            interj_menor8 = st.text_input("Interjornada < 8h")
-            interj_maior8 = st.text_input("Interjornada > 8h")
-            status_log1 = st.text_input("Status Log 1")
-            status_log2 = st.text_input("Status Log 2")
+            status1 = st.selectbox("Disponibilidade", ["", "Trabalhando", "Interjornada", "Indisponíveis"])
+            status2 = st.selectbox("Férias", ["", "Sim", "Não"])
+            status3 = st.selectbox("Licença", ["", "Sim", "Não"])
         
         with col8:
-            status1 = st.text_input("Status 1")
-            status2 = st.text_input("Status 2")
-            status3 = st.text_input("Status 3")
+            folga = st.selectbox("Folga", ["", "Sim", "Não"])
+            sobreaviso = st.selectbox("Sobreaviso", ["", "Sim", "Não"])
+            atestado = st.selectbox("Atestado", ["", "Sim", "Não"])
         
         submitted = st.form_submit_button("💾 Cadastrar Motorista")
         
@@ -324,13 +315,9 @@ elif pagina == "👥 Cadastrar Motorista":
                     
                     # Status operacional
                     'com-atend': com_atend,
-                    'sem-atend': sem_atend,
                     'com-veiculo': com_veiculo,
-                    'sem-veiculo': sem_veiculo,
                     'com-check': com_check,
-                    'sem-check': sem_check,
                     'dirigindo': dirigindo,
-                    'parado': parado,
                     'parado-ate1h': parado_ate1h,
                     'parado1ate2h': parado1ate2h,
                     'parado-acima2h': parado_acima2h,
@@ -345,16 +332,9 @@ elif pagina == "👥 Cadastrar Motorista":
                     'doc-vencendo': doc_vencendo,
                     'doc-vencido': doc_vencido,
                     
-                    # Localização e agenda
+                    # Localização e projetos
                     'localiz-atual': localiz_atual,
-                    'agenda-pro': agenda_pro,
-                    'agenda-anda': agenda_anda,
-                    'agenda-con': agenda_con,
-                    
-                    # Projetos
                     'projeto-pro': projeto_pro,
-                    'projeto-anda': projeto_anda,
-                    'projeto-con': projeto_con,
                     
                     # Interjornada
                     'interj-menor8': interj_menor8,
@@ -364,8 +344,9 @@ elif pagina == "👥 Cadastrar Motorista":
                     'status1': status1,
                     'status2': status2,
                     'status3': status3,
-                    'status-log1': status_log1,
-                    'status-log2': status_log2
+                    'folga': folga,
+                    'sobreaviso': sobreaviso,
+                    'atestado': atestado
                 }
                 
                 if gerenciador.adicionar_motorista(dados_motorista):
@@ -399,10 +380,10 @@ elif pagina == "📤 Importar Excel":
     exemplo = {
         'nome': 'João Silva',
         'usuario': 'joao.silva',
-        'empresa': 'Transportes ABC',
-        'status': 'Ativo',
-        'categoria': 'D',
-        'filial': 'São Paulo',
+        'empresa': 'EXPRESSO',
+        'status': 'ATIVO',
+        'grupo': 'Motorista',
+        'filial': 'SPO',
         'com-veiculo': 'Sim',
         'doc-vencido': 'Não'
     }
@@ -531,21 +512,17 @@ elif pagina == "✏️ Editar Motorista":
                 with col1:
                     nome = st.text_input("Nome completo*", value=motorista_data.get('nome', ''))
                     usuario = st.text_input("Usuário*", value=motorista_data.get('usuario', ''))
-                    grupo = st.text_input("Grupo", value=motorista_data.get('grupo', ''))
-                    empresa = st.text_input("Empresa*", value=motorista_data.get('empresa', ''))
-                    filial = st.text_input("Filial", value=motorista_data.get('filial', ''))
+                    grupo = st.selectbox("Grupo*", ["Motorista"], index=0)
+                    empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"], 
+                                         index=["EXPRESSO", "LOGIKA"].index(motorista_data.get('empresa', 'EXPRESSO')))
+                    filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"],
+                                        index=["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"].index(motorista_data.get('filial', 'SPO')))
                 
                 with col2:
-                    status = st.selectbox(
-                        "Status*", 
-                        ["Ativo", "Inativo", "Férias", "Afastado"],
-                        index=["Ativo", "Inativo", "Férias", "Afastado"].index(motorista_data.get('status', 'Ativo'))
-                    )
-                    categoria = st.selectbox(
-                        "Categoria CNH", 
-                        ["A", "B", "C", "D", "E"],
-                        index=["A", "B", "C", "D", "E"].index(motorista_data.get('categoria', 'B'))
-                    )
+                    status = st.selectbox("Status*", ["ATIVO", "INATIVO"],
+                                        index=["ATIVO", "INATIVO"].index(motorista_data.get('status', 'ATIVO')))
+                    categoria = st.selectbox("Categoria CNH", ["A", "B", "C", "D", "E"],
+                                           index=["A", "B", "C", "D", "E"].index(motorista_data.get('categoria', 'B')))
                     placa1 = st.text_input("Placa Principal", value=motorista_data.get('placa1', ''))
                     placa2 = st.text_input("Placa Secundária", value=motorista_data.get('placa2', ''))
                     placa3 = st.text_input("Placa Terciária", value=motorista_data.get('placa3', ''))
@@ -554,86 +531,46 @@ elif pagina == "✏️ Editar Motorista":
                 col3, col4 = st.columns(2)
                 
                 with col3:
-                    com_atend = st.selectbox(
-                        "Com Atendimento", 
-                        ["", "Sim", "Não"],
-                        index=["", "Sim", "Não"].index(motorista_data.get('com-atend', ''))
-                    )
-                    sem_atend = st.selectbox(
-                        "Sem Atendimento", 
-                        ["", "Sim", "Não"],
-                        index=["", "Sim", "Não"].index(motorista_data.get('sem-atend', ''))
-                    )
-                    com_veiculo = st.selectbox(
-                        "Com Veículo", 
-                        ["", "Sim", "Não"],
-                        index=["", "Sim", "Não"].index(motorista_data.get('com-veiculo', ''))
-                    )
-                    sem_veiculo = st.selectbox(
-                        "Sem Veículo", 
-                        ["", "Sim", "Não"],
-                        index=["", "Sim", "Não"].index(motorista_data.get('sem-veiculo', ''))
-                    )
-                    com_check = st.selectbox(
-                        "Com Check", 
-                        ["", "Sim", "Não"],
-                        index=["", "Sim", "Não"].index(motorista_data.get('com-check', ''))
-                    )
-                    sem_check = st.selectbox(
-                        "Sem Check", 
-                        ["", "Sim", "Não"],
-                        index=["", "Sim", "Não"].index(motorista_data.get('sem-check', ''))
-                    )
+                    com_atend = st.selectbox("Com Atendimento", ["", "Sim", "Não"],
+                                           index=["", "Sim", "Não"].index(motorista_data.get('com-atend', '')))
+                    com_veiculo = st.selectbox("Com Veículo", ["", "Sim", "Não"],
+                                             index=["", "Sim", "Não"].index(motorista_data.get('com-veiculo', '')))
+                    com_check = st.selectbox("Com Check", ["", "Sim", "Não"],
+                                           index=["", "Sim", "Não"].index(motorista_data.get('com-check', '')))
+                    dirigindo = st.selectbox("Dirigindo", ["", "Sim", "Não"],
+                                           index=["", "Sim", "Não"].index(motorista_data.get('dirigindo', '')))
                 
                 with col4:
-                    dirigindo = st.selectbox(
-                        "Dirigindo", 
-                        ["", "Sim", "Não"],
-                        index=["", "Sim", "Não"].index(motorista_data.get('dirigindo', ''))
-                    )
-                    parado = st.selectbox(
-                        "Parado", 
-                        ["", "Sim", "Não"],
-                        index=["", "Sim", "Não"].index(motorista_data.get('parado', ''))
-                    )
-                    parado_ate1h = st.selectbox(
-                        "Parado até 1h", 
-                        ["", "Sim", "Não"],
-                        index=["", "Sim", "Não"].index(motorista_data.get('parado-ate1h', ''))
-                    )
-                    parado1ate2h = st.selectbox(
-                        "Parado 1h a 2h", 
-                        ["", "Sim", "Não"],
-                        index=["", "Sim", "Não"].index(motorista_data.get('parado1ate2h', ''))
-                    )
-                    parado_acima2h = st.selectbox(
-                        "Parado acima 2h", 
-                        ["", "Sim", "Não"],
-                        index=["", "Sim", "Não"].index(motorista_data.get('parado-acima2h', ''))
-                    )
+                    parado_ate1h = st.selectbox("Parado até 1h", ["", "Sim", "Não"],
+                                              index=["", "Sim", "Não"].index(motorista_data.get('parado-ate1h', '')))
+                    parado1ate2h = st.selectbox("Parado 1h a 2h", ["", "Sim", "Não"],
+                                              index=["", "Sim", "Não"].index(motorista_data.get('parado1ate2h', '')))
+                    parado_acima2h = st.selectbox("Parado acima 2h", ["", "Sim", "Não"],
+                                                index=["", "Sim", "Não"].index(motorista_data.get('parado-acima2h', '')))
                 
                 st.subheader("Informações Adicionais")
                 col5, col6 = st.columns(2)
                 
                 with col5:
-                    localiz_atual = st.text_input("Localização Atual", value=motorista_data.get('localiz-atual', ''))
-                    doc_vencendo = st.selectbox(
-                        "Doc Vencendo", 
-                        ["", "Sim", "Não"],
-                        index=["", "Sim", "Não"].index(motorista_data.get('doc-vencendo', ''))
-                    )
-                    doc_vencido = st.selectbox(
-                        "Doc Vencido", 
-                        ["", "Sim", "Não"],
-                        index=["", "Sim", "Não"].index(motorista_data.get('doc-vencido', ''))
-                    )
-                    status1 = st.text_input("Status 1", value=motorista_data.get('status1', ''))
-                    status2 = st.text_input("Status 2", value=motorista_data.get('status2', ''))
-                    status3 = st.text_input("Status 3", value=motorista_data.get('status3', ''))
+                    localiz_atual = st.text_input("Última localiz pelo veículo", value=motorista_data.get('localiz-atual', ''))
+                    doc_vencendo = st.selectbox("Doc Vencendo", ["", "Sim", "Não"],
+                                              index=["", "Sim", "Não"].index(motorista_data.get('doc-vencendo', '')))
+                    doc_vencido = st.selectbox("Doc Vencido", ["", "Sim", "Não"],
+                                             index=["", "Sim", "Não"].index(motorista_data.get('doc-vencido', '')))
+                    status1 = st.selectbox("Disponibilidade", ["", "Trabalhando", "Interjornada", "Indisponíveis"],
+                                         index=["", "Trabalhando", "Interjornada", "Indisponíveis"].index(motorista_data.get('status1', '')))
+                    status2 = st.selectbox("Férias", ["", "Sim", "Não"],
+                                         index=["", "Sim", "Não"].index(motorista_data.get('status2', '')))
+                    status3 = st.selectbox("Licença", ["", "Sim", "Não"],
+                                         index=["", "Sim", "Não"].index(motorista_data.get('status3', '')))
                 
                 with col6:
-                    status_log1 = st.text_input("Status Log 1", value=motorista_data.get('status-log1', ''))
-                    status_log2 = st.text_input("Status Log 2", value=motorista_data.get('status-log2', ''))
+                    folga = st.selectbox("Folga", ["", "Sim", "Não"],
+                                       index=["", "Sim", "Não"].index(motorista_data.get('folga', '')))
+                    sobreaviso = st.selectbox("Sobreaviso", ["", "Sim", "Não"],
+                                            index=["", "Sim", "Não"].index(motorista_data.get('sobreaviso', '')))
+                    atestado = st.selectbox("Atestado", ["", "Sim", "Não"],
+                                          index=["", "Sim", "Não"].index(motorista_data.get('atestado', '')))
                 
                 submitted = st.form_submit_button("💾 Atualizar Motorista")
                 
@@ -651,13 +588,9 @@ elif pagina == "✏️ Editar Motorista":
                             'placa2': placa2,
                             'placa3': placa3,
                             'com-atend': com_atend,
-                            'sem-atend': sem_atend,
                             'com-veiculo': com_veiculo,
-                            'sem-veiculo': sem_veiculo,
                             'com-check': com_check,
-                            'sem-check': sem_check,
                             'dirigindo': dirigindo,
-                            'parado': parado,
                             'parado-ate1h': parado_ate1h,
                             'parado1ate2h': parado1ate2h,
                             'parado-acima2h': parado_acima2h,
@@ -667,8 +600,9 @@ elif pagina == "✏️ Editar Motorista":
                             'status1': status1,
                             'status2': status2,
                             'status3': status3,
-                            'status-log1': status_log1,
-                            'status-log2': status_log2
+                            'folga': folga,
+                            'sobreaviso': sobreaviso,
+                            'atestado': atestado
                         }
                         
                         if gerenciador.atualizar_motorista(index, dados_atualizados):
