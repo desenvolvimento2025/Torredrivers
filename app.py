@@ -87,18 +87,22 @@ class GerenciadorMotoristas:
         """Salva dados no arquivo Excel mantendo a estrutura"""
         try:
             # Garante a ordem correta das colunas para motoristas
-            if not self.dados.empty:
+            if self.dados is not None and not self.dados.empty:
                 for coluna in ESTRUTURA_COLUNAS:
                     if coluna not in self.dados.columns:
                         self.dados[coluna] = ""
                 self.dados = self.dados[ESTRUTURA_COLUNAS]
+            else:
+                self.dados = pd.DataFrame(columns=ESTRUTURA_COLUNAS)
             
             # Garante a ordem correta das colunas para clientes
-            if not self.dados_clientes.empty:
+            if self.dados_clientes is not None and not self.dados_clientes.empty:
                 for coluna in ESTRUTURA_CLIENTES:
                     if coluna not in self.dados_clientes.columns:
                         self.dados_clientes[coluna] = ""
                 self.dados_clientes = self.dados_clientes[ESTRUTURA_CLIENTES]
+            else:
+                self.dados_clientes = pd.DataFrame(columns=ESTRUTURA_CLIENTES)
             
             with pd.ExcelWriter(self.arquivo_excel, engine='openpyxl') as writer:
                 self.dados.to_excel(writer, sheet_name='motoristas', index=False)
@@ -119,6 +123,8 @@ class GerenciadorMotoristas:
                 dados_completos[coluna] = dados_motorista.get(coluna, "")
             
             novo_registro = pd.DataFrame([dados_completos])
+            if self.dados is None:
+                self.dados = pd.DataFrame(columns=ESTRUTURA_COLUNAS)
             self.dados = pd.concat([self.dados, novo_registro], ignore_index=True)
             return self.salvar_dados()
         except Exception as e:
@@ -171,7 +177,7 @@ class GerenciadorMotoristas:
             dados_importados = dados_importados.drop_duplicates(subset=['nome', 'usuario'], keep='last')
             
             # Se já existem dados, faz merge
-            if not self.dados.empty:
+            if self.dados is not None and not self.dados.empty:
                 # Remove registros existentes com mesmo nome e usuário
                 mask = ~self.dados[['nome', 'usuario']].apply(tuple, 1).isin(
                     dados_importados[['nome', 'usuario']].apply(tuple, 1)
@@ -199,6 +205,8 @@ class GerenciadorMotoristas:
                 dados_completos[coluna] = dados_cliente.get(coluna, "")
             
             novo_registro = pd.DataFrame([dados_completos])
+            if self.dados_clientes is None:
+                self.dados_clientes = pd.DataFrame(columns=ESTRUTURA_CLIENTES)
             self.dados_clientes = pd.concat([self.dados_clientes, novo_registro], ignore_index=True)
             return self.salvar_dados()
         except Exception as e:
@@ -224,6 +232,10 @@ class GerenciadorMotoristas:
         except Exception as e:
             st.error(f"Erro ao excluir cliente: {e}")
             return False
+
+    def tem_dados_clientes(self):
+        """Verifica se existem dados de clientes"""
+        return self.dados_clientes is not None and not self.dados_clientes.empty
 
 # Inicialização do gerenciador
 @st.cache_resource
@@ -258,7 +270,7 @@ if gerenciador.dados is None:
 def obter_valores_unicos(coluna, dados):
     """Obtém valores únicos de uma coluna com tratamento de erro"""
     try:
-        if coluna in dados.columns:
+        if dados is not None and not dados.empty and coluna in dados.columns:
             valores = dados[coluna].unique().tolist()
             # Remove valores NaN/None
             valores = [v for v in valores if pd.notna(v) and v != ""]
@@ -314,7 +326,7 @@ if pagina == "📊 Dashboard":
     else:
         st.info("Nenhum motorista cadastrado ainda.")
 
-# Páginas existentes para motoristas (mantidas inalteradas)
+# Página: Cadastrar Motorista
 elif pagina == "👥 Cadastrar Motorista":
     st.title("👥 Cadastrar Novo Motorista")
     
@@ -441,8 +453,579 @@ elif pagina == "👥 Cadastrar Motorista":
             else:
                 st.warning("⚠️ Preencha os campos obrigatórios (Nome, Usuário, Empresa)")
 
-# Páginas existentes para motoristas continuam aqui...
-# [As páginas "Importar Excel", "Editar Motorista", "Excluir Motorista", "Lista Completa" permanecem EXATAMENTE como estão]
+# Página: Importar Excel
+elif pagina == "📤 Importar Excel":
+    st.title("📤 Importar Dados via Excel")
+    
+    st.markdown("""
+    ### 📋 Instruções para Importação
+    
+    1. **Preparar o arquivo Excel** com as colunas conforme modelo
+    2. **Colunas obrigatórias**: `nome`, `usuario`, `empresa`
+    3. **Formato suportado**: .xlsx ou .xls
+    4. **Dados duplicados** serão atualizados (baseado em nome + usuário)
+    """)
+    
+    # Download do template
+    st.subheader("📥 Download do Template")
+    
+    # Cria template vazio com estrutura exata
+    template_df = pd.DataFrame(columns=ESTRUTURA_COLUNAS)
+    
+    # Adiciona exemplo de dados
+    exemplo = {
+        'nome': 'João Silva',
+        'usuario': 'joao.silva',
+        'empresa': 'EXPRESSO',
+        'status': 'ATIVO',
+        'grupo': 'Motorista',
+        'filial': 'SPO',
+        'disponibilidade': 'Trabalhando',
+        'ferias': 'Não',
+        'licenca': 'Não',
+        'folga': 'Não',
+        'sobreaviso': 'Não',
+        'atestado': 'Não',
+        'com-veiculo': 'Sim',
+        'doc-vencido': 'Não',
+        'associacao-clientes': 'Sim',
+        'placa1': 'ABC1234',
+        'placa2': 'DEF5678',
+        'placa3': 'GHI9012',
+        'categoria': 'D'
+    }
+    for col, valor in exemplo.items():
+        if col in template_df.columns:
+            template_df.loc[0, col] = valor
+    
+    # Botão para download do template
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+        template_df.to_excel(writer, sheet_name='motoristas', index=False)
+    
+    st.download_button(
+        label="📋 Baixar Template Excel",
+        data=buffer.getvalue(),
+        file_name="template_motoristas.xlsx",
+        mime="application/vnd.ms-excel"
+    )
+    
+    # Upload do arquivo
+    st.subheader("📤 Upload do Arquivo")
+    
+    arquivo = st.file_uploader(
+        "Selecione o arquivo Excel para importar",
+        type=['xlsx', 'xls'],
+        help="Arquivo Excel com dados dos motoristas"
+    )
+    
+    if arquivo is not None:
+        try:
+            # Pré-visualização dos dados
+            st.subheader("👁️ Pré-visualização dos Dados")
+            dados_preview = pd.read_excel(arquivo)
+            st.dataframe(dados_preview.head(10), use_container_width=True)
+            
+            st.info(f"📊 Arquivo contém {len(dados_preview)} registros")
+            
+            # Mostra colunas encontradas
+            colunas_encontradas = list(dados_preview.columns)
+            st.write(f"**Colunas detectadas:** {', '.join(colunas_encontradas)}")
+            
+            # Verifica colunas obrigatórias
+            colunas_necessarias = ['nome', 'usuario', 'empresa']
+            colunas_faltantes = [col for col in colunas_necessarias if col not in dados_preview.columns]
+            
+            if colunas_faltantes:
+                st.error(f"❌ Colunas obrigatórias faltantes: {', '.join(colunas_faltantes)}")
+            else:
+                st.success("✅ Todas as colunas obrigatórias presentes")
+            
+            # Opções de importação
+            st.subheader("⚙️ Opções de Importação")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                modo_importacao = st.radio(
+                    "Modo de importação:",
+                    ["Adicionar/Atualizar", "Substituir Tudo"],
+                    help="Adicionar/Atualizar: mantém dados existentes e atualiza duplicatas. Substituir Tudo: remove todos os dados atuais."
+                )
+            
+            with col2:
+                if st.checkbox("Mostrar detalhes avançados"):
+                    st.write(f"**Total de registros no sistema atual:** {len(gerenciador.dados) if gerenciador.dados is not None else 0}")
+                    st.write(f"**Estrutura esperada:** {len(ESTRUTURA_COLUNAS)} colunas")
+            
+            # Botão de importação
+            if st.button("🚀 Iniciar Importação", type="primary"):
+                if colunas_faltantes:
+                    st.error("Não é possível importar. Corrija as colunas faltantes primeiro.")
+                else:
+                    with st.spinner("Importando dados..."):
+                        if modo_importacao == "Substituir Tudo":
+                            # Limpa dados atuais
+                            gerenciador.dados = pd.DataFrame(columns=ESTRUTURA_COLUNAS)
+                        
+                        success = gerenciador.importar_excel(arquivo)
+                        
+                        if success:
+                            st.success("✅ Importação concluída com sucesso!")
+                            st.balloons()
+                            
+                            # Mostra estatísticas
+                            st.subheader("📈 Estatísticas da Importação")
+                            col1, col2, col3 = st.columns(3)
+                            
+                            with col1:
+                                st.metric("Total no Sistema", len(gerenciador.dados))
+                            
+                            with col2:
+                                st.metric("Registros Importados", len(dados_preview))
+                            
+                            with col3:
+                                duplicatas = len(dados_preview) - len(dados_preview.drop_duplicates(subset=['nome', 'usuario']))
+                                st.metric("Duplicatas Removidas", duplicatas)
+                            
+                            # Atualiza a página após 2 segundos
+                            time.sleep(2)
+                            st.rerun()
+                        else:
+                            st.error("❌ Erro na importação. Verifique o formato do arquivo.")
+        
+        except Exception as e:
+            st.error(f"❌ Erro ao processar arquivo: {e}")
+            st.info("💡 **Dica:** Verifique se o arquivo está no formato correto e contém as colunas obrigatórias.")
+
+# Página: Editar Motorista
+elif pagina == "✏️ Editar Motorista":
+    st.title("✏️ Editar Motorista")
+    
+    if gerenciador.dados is not None and not gerenciador.dados.empty:
+        motorista_selecionado = st.selectbox(
+            "Selecione o motorista para editar",
+            gerenciador.dados['nome'].tolist()
+        )
+        
+        if motorista_selecionado:
+            index = gerenciador.dados[gerenciador.dados['nome'] == motorista_selecionado].index[0]
+            motorista_data = gerenciador.dados.iloc[index]
+            
+            with st.form("form_edicao"):
+                st.subheader("Informações Básicas")
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    nome = st.text_input("Nome completo*", value=motorista_data.get('nome', ''))
+                    usuario = st.text_input("Usuário*", value=motorista_data.get('usuario', ''))
+                    grupo = st.selectbox("Grupo*", ["Motorista"], index=0)
+                    empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"], 
+                                         index=["EXPRESSO", "LOGIKA"].index(motorista_data.get('empresa', 'EXPRESSO')))
+                    filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"],
+                                        index=["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"].index(motorista_data.get('filial', 'SPO')))
+                
+                with col2:
+                    status = st.selectbox("Status*", ["ATIVO", "INATIVO"],
+                                        index=["ATIVO", "INATIVO"].index(motorista_data.get('status', 'ATIVO')))
+                    categoria = st.selectbox("Categoria CNH", ["A", "B", "C", "D", "E"],
+                                           index=["A", "B", "C", "D", "E"].index(motorista_data.get('categoria', 'B')))
+                    placa1 = st.text_input("Placa Principal", value=motorista_data.get('placa1', ''))
+                    placa2 = st.text_input("Placa Secundária", value=motorista_data.get('placa2', ''))
+                    placa3 = st.text_input("Placa Terciária", value=motorista_data.get('placa3', ''))
+                
+                st.subheader("Status do Motorista")
+                col3, col4 = st.columns(2)
+                
+                with col3:
+                    disponibilidade = st.selectbox("Disponibilidade*", ["Trabalhando", "Interjornada", "Indisponíveis"],
+                                                 index=["Trabalhando", "Interjornada", "Indisponíveis"].index(motorista_data.get('disponibilidade', 'Trabalhando')))
+                    ferias = st.selectbox("Férias*", ["Sim", "Não"],
+                                        index=["Sim", "Não"].index(motorista_data.get('ferias', 'Não')))
+                    licenca = st.selectbox("Licença*", ["Sim", "Não"],
+                                         index=["Sim", "Não"].index(motorista_data.get('licenca', 'Não')))
+                    folga = st.selectbox("Folga*", ["Sim", "Não"],
+                                       index=["Sim", "Não"].index(motorista_data.get('folga', 'Não')))
+                
+                with col4:
+                    sobreaviso = st.selectbox("Sobreaviso*", ["Sim", "Não"],
+                                            index=["Sim", "Não"].index(motorista_data.get('sobreaviso', 'Não')))
+                    atestado = st.selectbox("Atestado*", ["Sim", "Não"],
+                                          index=["Sim", "Não"].index(motorista_data.get('atestado', 'Não')))
+                    com_atend = st.selectbox("Com Atendimento", ["", "Sim", "Não"],
+                                           index=["", "Sim", "Não"].index(motorista_data.get('com-atend', '')))
+                    com_veiculo = st.selectbox("Com Veículo", ["", "Sim", "Não"],
+                                             index=["", "Sim", "Não"].index(motorista_data.get('com-veiculo', '')))
+                
+                st.subheader("Informações Adicionais")
+                col5, col6 = st.columns(2)
+                
+                with col5:
+                    localiz_atual = st.text_input("Última localiz pelo veículo", value=motorista_data.get('localiz-atual', ''))
+                    doc_vencendo = st.selectbox("Doc Vencendo", ["", "Sim", "Não"],
+                                              index=["", "Sim", "Não"].index(motorista_data.get('doc-vencendo', '')))
+                    doc_vencido = st.selectbox("Doc Vencido", ["", "Sim", "Não"],
+                                             index=["", "Sim", "Não"].index(motorista_data.get('doc-vencido', '')))
+                    associacao_clientes = st.selectbox("Associação a Clientes", ["", "Sim", "Não"],
+                                                     index=["", "Sim", "Não"].index(motorista_data.get('associacao-clientes', '')))
+                
+                with col6:
+                    interj_menor8 = st.selectbox("Interjornada < 8h", ["", "Sim", "Não"],
+                                               index=["", "Sim", "Não"].index(motorista_data.get('interj-menor8', '')))
+                    interj_maior8 = st.selectbox("Interjornada > 8h", ["", "Sim", "Não"],
+                                               index=["", "Sim", "Não"].index(motorista_data.get('interj-maior8', '')))
+                
+                submitted = st.form_submit_button("💾 Atualizar Motorista")
+                
+                if submitted:
+                    if nome and usuario and empresa:
+                        dados_atualizados = {
+                            'nome': nome,
+                            'usuario': usuario,
+                            'grupo': grupo,
+                            'empresa': empresa,
+                            'filial': filial,
+                            'status': status,
+                            'categoria': categoria,
+                            'placa1': placa1,
+                            'placa2': placa2,
+                            'placa3': placa3,
+                            'disponibilidade': disponibilidade,
+                            'ferias': ferias,
+                            'licenca': licenca,
+                            'folga': folga,
+                            'sobreaviso': sobreaviso,
+                            'atestado': atestado,
+                            'com-atend': com_atend,
+                            'com-veiculo': com_veiculo,
+                            'doc-vencendo': doc_vencendo,
+                            'doc-vencido': doc_vencido,
+                            'localiz-atual': localiz_atual,
+                            'associacao-clientes': associacao_clientes,
+                            'interj-menor8': interj_menor8,
+                            'interj-maior8': interj_maior8
+                        }
+                        
+                        if gerenciador.atualizar_motorista(index, dados_atualizados):
+                            st.success("✅ Motorista atualizado com sucesso!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Erro ao atualizar motorista")
+                    else:
+                        st.warning("⚠️ Preencha os campos obrigatórios")
+    else:
+        st.info("Nenhum motorista cadastrado para editar.")
+
+# Página: Excluir Motorista
+elif pagina == "🗑️ Excluir Motorista":
+    st.title("🗑️ Excluir Motorista")
+    
+    if gerenciador.dados is not None and not gerenciador.dados.empty:
+        motorista_selecionado = st.selectbox(
+            "Selecione o motorista para excluir",
+            gerenciador.dados['nome'].tolist()
+        )
+        
+        if motorista_selecionado:
+            index = gerenciador.dados[gerenciador.dados['nome'] == motorista_selecionado].index[0]
+            motorista_data = gerenciador.dados.iloc[index]
+            
+            st.warning("⚠️ Confirma a exclusão deste motorista?")
+            
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.write(f"**Nome:** {motorista_data.get('nome', '')}")
+                st.write(f"**Usuário:** {motorista_data.get('usuario', '')}")
+                st.write(f"**Empresa:** {motorista_data.get('empresa', '')}")
+                st.write(f"**Status:** {motorista_data.get('status', '')}")
+            
+            col1, col2, col3 = st.columns(3)
+            with col2:
+                if st.button("🗑️ Confirmar Exclusão", type="primary"):
+                    if gerenciador.excluir_motorista(index):
+                        st.success("✅ Motorista excluído com sucesso!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Erro ao excluir motorista")
+    else:
+        st.info("Nenhum motorista cadastrado.")
+
+# Página: Lista Completa
+elif pagina == "📋 Lista Completa":
+    st.title("📋 Lista Completa de Motoristas")
+    
+    if gerenciador.dados is not None and not gerenciador.dados.empty:
+        # Filtros
+        st.subheader("🔍 Filtros")
+        
+        # Primeira linha de filtros
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            valores_empresa = obter_valores_unicos('empresa', gerenciador.dados)
+            filtro_empresa = st.selectbox(
+                "Empresa",
+                ["Todas"] + valores_empresa
+            )
+        
+        with col2:
+            valores_filial = obter_valores_unicos('filial', gerenciador.dados)
+            filtro_filial = st.selectbox(
+                "Filial",
+                ["Todas"] + valores_filial
+            )
+        
+        with col3:
+            valores_categoria = obter_valores_unicos('categoria', gerenciador.dados)
+            filtro_categoria = st.selectbox(
+                "Categoria",
+                ["Todas"] + valores_categoria
+            )
+        
+        with col4:
+            filtro_veiculo = st.selectbox(
+                "Com Veículo",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Segunda linha de filtros
+        col5, col6, col7, col8 = st.columns(4)
+        
+        with col5:
+            valores_disponibilidade = obter_valores_unicos('disponibilidade', gerenciador.dados)
+            filtro_disponibilidade = st.selectbox(
+                "Disponibilidade",
+                ["Todas"] + valores_disponibilidade
+            )
+        
+        with col6:
+            filtro_ferias = st.selectbox(
+                "Férias",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        with col7:
+            filtro_licenca = st.selectbox(
+                "Licença",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        with col8:
+            filtro_folga = st.selectbox(
+                "Folga",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        # Terceira linha de filtros
+        col9, col10, col11, col12 = st.columns(4)
+        
+        with col9:
+            filtro_sobreaviso = st.selectbox(
+                "Sobreaviso",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        with col10:
+            filtro_atestado = st.selectbox(
+                "Atestado",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        with col11:
+            filtro_com_atend = st.selectbox(
+                "Com Atendimento",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col12:
+            filtro_com_check = st.selectbox(
+                "Com Check",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Quarta linha de filtros
+        col13, col14, col15, col16 = st.columns(4)
+        
+        with col13:
+            filtro_dirigindo = st.selectbox(
+                "Dirigindo",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col14:
+            filtro_parado_ate1h = st.selectbox(
+                "Parado até 1h",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col15:
+            filtro_parado1ate2h = st.selectbox(
+                "Parado 1h a 2h",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col16:
+            filtro_parado_acima2h = st.selectbox(
+                "Parado acima 2h",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Quinta linha de filtros
+        col17, col18, col19, col20 = st.columns(4)
+        
+        with col17:
+            filtro_jornada_acm80 = st.selectbox(
+                "Jornada acima 80%",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col18:
+            filtro_jornada_exced = st.selectbox(
+                "Jornada Excedida",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col19:
+            filtro_sem_folga_acm7d = st.selectbox(
+                "Sem folga a partir 8d",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col20:
+            filtro_sem_folga_acm12d = st.selectbox(
+                "Sem folga a partir de 12d",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Sexta linha de filtros
+        col21, col22, col23, col24 = st.columns(4)
+        
+        with col21:
+            filtro_doc_vencendo = st.selectbox(
+                "Doc Vencendo",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col22:
+            filtro_doc_vencido = st.selectbox(
+                "Doc Vencido",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col23:
+            filtro_associacao_clientes = st.selectbox(
+                "Associação a Clientes",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col24:
+            filtro_interj_menor8 = st.selectbox(
+                "Interjornada < 8h",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Sétima linha de filtros
+        col25, col26, col27, col28 = st.columns(4)
+        
+        with col25:
+            filtro_interj_maior8 = st.selectbox(
+                "Interjornada > 8h",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Aplicar filtros
+        dados_filtrados = gerenciador.dados.copy()
+        
+        # Aplicar todos os filtros
+        if filtro_empresa != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['empresa'] == filtro_empresa]
+        
+        if filtro_filial != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['filial'] == filtro_filial]
+        
+        if filtro_categoria != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['categoria'] == filtro_categoria]
+        
+        if filtro_veiculo != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['com-veiculo'] == filtro_veiculo]
+        
+        if filtro_disponibilidade != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['disponibilidade'] == filtro_disponibilidade]
+        
+        if filtro_ferias != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['ferias'] == filtro_ferias]
+        
+        if filtro_licenca != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['licenca'] == filtro_licenca]
+        
+        if filtro_folga != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['folga'] == filtro_folga]
+        
+        if filtro_sobreaviso != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['sobreaviso'] == filtro_sobreaviso]
+        
+        if filtro_atestado != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['atestado'] == filtro_atestado]
+        
+        if filtro_com_atend != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['com-atend'] == filtro_com_atend]
+        
+        if filtro_com_check != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['com-check'] == filtro_com_check]
+        
+        if filtro_dirigindo != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['dirigindo'] == filtro_dirigindo]
+        
+        if filtro_parado_ate1h != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['parado-ate1h'] == filtro_parado_ate1h]
+        
+        if filtro_parado1ate2h != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['parado1ate2h'] == filtro_parado1ate2h]
+        
+        if filtro_parado_acima2h != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['parado-acima2h'] == filtro_parado_acima2h]
+        
+        if filtro_jornada_acm80 != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['jornada-acm80'] == filtro_jornada_acm80]
+        
+        if filtro_jornada_exced != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['jornada-exced'] == filtro_jornada_exced]
+        
+        if filtro_sem_folga_acm7d != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['sem-folga-acm7d'] == filtro_sem_folga_acm7d]
+        
+        if filtro_sem_folga_acm12d != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['sem-folga-acm12d'] == filtro_sem_folga_acm12d]
+        
+        if filtro_doc_vencendo != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['doc-vencendo'] == filtro_doc_vencendo]
+        
+        if filtro_doc_vencido != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['doc-vencido'] == filtro_doc_vencido]
+        
+        if filtro_associacao_clientes != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['associacao-clientes'] == filtro_associacao_clientes]
+        
+        if filtro_interj_menor8 != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['interj-menor8'] == filtro_interj_menor8]
+        
+        if filtro_interj_maior8 != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['interj-maior8'] == filtro_interj_maior8]
+        
+        st.subheader(f"📊 Resultados ({len(dados_filtrados)} motoristas)")
+        st.dataframe(dados_filtrados, use_container_width=True)
+        
+        # Botão de download
+        if not dados_filtrados.empty:
+            csv = dados_filtrados.to_csv(index=False)
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv,
+                file_name=f"motoristas_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                mime="text/csv"
+            )
+    else:
+        st.info("Nenhum motorista cadastrado.")
 
 # NOVAS PÁGINAS PARA CLIENTES
 
@@ -495,7 +1078,7 @@ elif pagina == "🏢 Cadastrar Cliente":
 elif pagina == "✏️ Editar Cliente":
     st.title("✏️ Editar Cliente")
     
-    if gerenciador.dados_clientes is not None and not gerenciador.dados_clientes.empty:
+    if gerenciador.tem_dados_clientes():
         cliente_selecionado = st.selectbox(
             "Selecione o cliente para editar",
             gerenciador.dados_clientes['cliente'].tolist()
@@ -516,9 +1099,11 @@ elif pagina == "✏️ Editar Cliente":
                 
                 with col1:
                     cliente = st.text_input("Nome do Cliente*", value=cliente_data.get('cliente', ''))
-                    nome_motorista = st.selectbox("Nome do Motorista*", 
-                                                [""] + nomes_motoristas,
-                                                index=([""] + nomes_motoristas).index(cliente_data.get('nome', '')) if cliente_data.get('nome', '') in [""] + nomes_motoristas else 0)
+                    # Encontra o índice correto para o dropdown
+                    nome_atual = cliente_data.get('nome', '')
+                    opcoes_motoristas = [""] + nomes_motoristas
+                    indice_atual = opcoes_motoristas.index(nome_atual) if nome_atual in opcoes_motoristas else 0
+                    nome_motorista = st.selectbox("Nome do Motorista*", opcoes_motoristas, index=indice_atual)
                     usuario = st.text_input("Usuário*", value=cliente_data.get('usuario', ''))
                 
                 with col2:
@@ -556,7 +1141,7 @@ elif pagina == "✏️ Editar Cliente":
 elif pagina == "🗑️ Excluir Cliente":
     st.title("🗑️ Excluir Cliente")
     
-    if gerenciador.dados_clientes is not None and not gerenciador.dados_clientes.empty:
+    if gerenciador.tem_dados_clientes():
         cliente_selecionado = st.selectbox(
             "Selecione o cliente para excluir",
             gerenciador.dados_clientes['cliente'].tolist()
@@ -591,7 +1176,7 @@ elif pagina == "🗑️ Excluir Cliente":
 elif pagina == "📋 Lista de Clientes":
     st.title("📋 Lista de Clientes")
     
-    if gerenciador.dados_clientes is not None and not gerenciador.dados_clientes.empty:
+    if gerenciador.tem_dados_clientes():
         # Filtros
         st.subheader("🔍 Filtros")
         
