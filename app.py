@@ -869,7 +869,7 @@ elif pagina == "🗑️ Excluir Motorista":
     else:
         st.info("Nenhum motorista cadastrado.")
 
-# Página: Lista Completa
+# Página: Lista Completa (LAYOUT ORIGINAL RESTAURADO)
 elif pagina == "📋 Lista Completa":
     st.title("📋 Lista Completa de Motoristas")
     
@@ -877,96 +877,274 @@ elif pagina == "📋 Lista Completa":
         # Filtros
         st.subheader("🔍 Filtros")
         
+        # Primeira linha de filtros
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
+            valores_empresa = obter_valores_unicos('empresa', gerenciador.dados)
             filtro_empresa = st.selectbox(
                 "Empresa",
-                ["Todas"] + obter_valores_unicos('empresa', gerenciador.dados)
+                ["Todas"] + valores_empresa
             )
         
         with col2:
-            filtro_status = st.selectbox(
-                "Status",
-                ["Todos"] + obter_valores_unicos('status', gerenciador.dados)
+            valores_filial = obter_valores_unicos('filial', gerenciador.dados)
+            filtro_filial = st.selectbox(
+                "Filial",
+                ["Todas"] + valores_filial
             )
         
         with col3:
-            filtro_filial = st.selectbox(
-                "Filial",
-                ["Todas"] + obter_valores_unicos('filial', gerenciador.dados)
+            valores_categoria = obter_valores_unicos('categoria', gerenciador.dados)
+            filtro_categoria = st.selectbox(
+                "Categoria",
+                ["Todas"] + valores_categoria
             )
         
         with col4:
+            filtro_veiculo = st.selectbox(
+                "Com Veículo",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Segunda linha de filtros
+        col5, col6, col7, col8 = st.columns(4)
+        
+        with col5:
+            valores_disponibilidade = obter_valores_unicos('disponibilidade', gerenciador.dados)
             filtro_disponibilidade = st.selectbox(
                 "Disponibilidade",
-                ["Todas"] + obter_valores_unicos('disponibilidade', gerenciador.dados)
+                ["Todas"] + valores_disponibilidade
+            )
+        
+        with col6:
+            filtro_ferias = st.selectbox(
+                "Férias",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        with col7:
+            filtro_licenca = st.selectbox(
+                "Licença",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        with col8:
+            filtro_folga = st.selectbox(
+                "Folga",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        # Terceira linha de filtros
+        col9, col10, col11, col12 = st.columns(4)
+        
+        with col9:
+            filtro_sobreaviso = st.selectbox(
+                "Sobreaviso",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        with col10:
+            filtro_atestado = st.selectbox(
+                "Atestado",
+                ["Todas", "Sim", "Não"]
+            )
+        
+        with col11:
+            filtro_com_atend = st.selectbox(
+                "Com Atendimento",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col12:
+            filtro_com_check = st.selectbox(
+                "Com Check",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Quarta linha de filtros
+        col13, col14, col15, col16 = st.columns(4)
+        
+        with col13:
+            filtro_dirigindo = st.selectbox(
+                "Dirigindo",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col14:
+            filtro_parado_ate1h = st.selectbox(
+                "Parado até 1h",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col15:
+            filtro_parado1ate2h = st.selectbox(
+                "Parado 1h a 2h",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col16:
+            filtro_parado_acima2h = st.selectbox(
+                "Parado acima 2h",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Quinta linha de filtros
+        col17, col18, col19, col20 = st.columns(4)
+        
+        with col17:
+            filtro_jornada_acm80 = st.selectbox(
+                "Jornada acima 80%",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col18:
+            filtro_jornada_exced = st.selectbox(
+                "Jornada Excedida",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col19:
+            filtro_sem_folga_acm7d = st.selectbox(
+                "Sem folga a partir 8d",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col20:
+            filtro_sem_folga_acm12d = st.selectbox(
+                "Sem folga a partir de 12d",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Sexta linha de filtros
+        col21, col22, col23, col24 = st.columns(4)
+        
+        with col21:
+            filtro_doc_vencendo = st.selectbox(
+                "Doc Vencendo",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col22:
+            filtro_doc_vencido = st.selectbox(
+                "Doc Vencido",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col23:
+            filtro_associacao_clientes = st.selectbox(
+                "Associação a Clientes",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        with col24:
+            filtro_interj_menor8 = st.selectbox(
+                "Interjornada < 8h",
+                ["Todos", "Sim", "Não"]
+            )
+        
+        # Sétima linha de filtros
+        col25, col26, col27, col28 = st.columns(4)
+        
+        with col25:
+            filtro_interj_maior8 = st.selectbox(
+                "Interjornada > 8h",
+                ["Todos", "Sim", "Não"]
             )
         
         # Aplicar filtros
         dados_filtrados = gerenciador.dados.copy()
         
+        # Aplicar todos os filtros
         if filtro_empresa != "Todas":
             dados_filtrados = dados_filtrados[dados_filtrados['empresa'] == filtro_empresa]
-        
-        if filtro_status != "Todos":
-            dados_filtrados = dados_filtrados[dados_filtrados['status'] == filtro_status]
         
         if filtro_filial != "Todas":
             dados_filtrados = dados_filtrados[dados_filtrados['filial'] == filtro_filial]
         
+        if filtro_categoria != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['categoria'] == filtro_categoria]
+        
+        if filtro_veiculo != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['com-veiculo'] == filtro_veiculo]
+        
         if filtro_disponibilidade != "Todas":
             dados_filtrados = dados_filtrados[dados_filtrados['disponibilidade'] == filtro_disponibilidade]
         
-        # Mostrar estatísticas dos filtros
-        st.info(f"📊 Mostrando {len(dados_filtrados)} de {len(gerenciador.dados)} motoristas")
+        if filtro_ferias != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['ferias'] == filtro_ferias]
         
-        # Seleção de colunas para exibição
-        st.subheader("👁️ Colunas para Exibição")
+        if filtro_licenca != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['licenca'] == filtro_licenca]
         
-        colunas_selecionadas = st.multiselect(
-            "Selecione as colunas para exibir",
-            options=COLUNAS_PRINCIPAIS,
-            default=COLUNAS_PRINCIPAIS[:8]  # Primeiras 8 colunas por padrão
-        )
+        if filtro_folga != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['folga'] == filtro_folga]
         
-        if not colunas_selecionadas:
-            colunas_selecionadas = COLUNAS_PRINCIPAIS[:8]
+        if filtro_sobreaviso != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['sobreaviso'] == filtro_sobreaviso]
         
-        # Tabela de dados
-        st.subheader("📊 Dados dos Motoristas")
-        st.dataframe(dados_filtrados[colunas_selecionadas], use_container_width=True)
+        if filtro_atestado != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['atestado'] == filtro_atestado]
+        
+        if filtro_com_atend != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['com-atend'] == filtro_com_atend]
+        
+        if filtro_com_check != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['com-check'] == filtro_com_check]
+        
+        if filtro_dirigindo != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['dirigindo'] == filtro_dirigindo]
+        
+        if filtro_parado_ate1h != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['parado-ate1h'] == filtro_parado_ate1h]
+        
+        if filtro_parado1ate2h != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['parado1ate2h'] == filtro_parado1ate2h]
+        
+        if filtro_parado_acima2h != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['parado-acima2h'] == filtro_parado_acima2h]
+        
+        if filtro_jornada_acm80 != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['jornada-acm80'] == filtro_jornada_acm80]
+        
+        if filtro_jornada_exced != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['jornada-exced'] == filtro_jornada_exced]
+        
+        if filtro_sem_folga_acm7d != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['sem-folga-acm7d'] == filtro_sem_folga_acm7d]
+        
+        if filtro_sem_folga_acm12d != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['sem-folga-acm12d'] == filtro_sem_folga_acm12d]
+        
+        if filtro_doc_vencendo != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['doc-vencendo'] == filtro_doc_vencendo]
+        
+        if filtro_doc_vencido != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['doc-vencido'] == filtro_doc_vencido]
+        
+        if filtro_associacao_clientes != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['associacao-clientes'] == filtro_associacao_clientes]
+        
+        if filtro_interj_menor8 != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['interj-menor8'] == filtro_interj_menor8]
+        
+        if filtro_interj_maior8 != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['interj-maior8'] == filtro_interj_maior8]
+        
+        st.subheader(f"📊 Resultados ({len(dados_filtrados)} motoristas)")
+        st.dataframe(dados_filtrados, use_container_width=True)
         
         # Botão de download
-        st.subheader("📥 Exportar Dados")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Download como CSV
-            csv = dados_filtrados[colunas_selecionadas].to_csv(index=False)
+        if not dados_filtrados.empty:
+            csv = dados_filtrados.to_csv(index=False)
             st.download_button(
-                label="📄 Baixar como CSV",
+                label="📥 Download CSV",
                 data=csv,
                 file_name=f"motoristas_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
                 mime="text/csv"
             )
-        
-        with col2:
-            # Download como Excel
-            buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-                dados_filtrados[colunas_selecionadas].to_excel(writer, sheet_name='motoristas', index=False)
-            
-            st.download_button(
-                label="📊 Baixar como Excel",
-                data=buffer.getvalue(),
-                file_name=f"motoristas_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-                mime="application/vnd.ms-excel"
-            )
-    
     else:
-        st.info("Nenhum motorista cadastrado ainda.")
+        st.info("Nenhum motorista cadastrado.")
 
 # PÁGINAS DE CLIENTES
 
@@ -1170,28 +1348,31 @@ elif pagina == "📋 Lista de Clientes":
         # Filtros
         st.subheader("🔍 Filtros")
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            filtro_empresa = st.selectbox(
-                "Empresa",
-                ["Todas"] + obter_valores_unicos('empresa', gerenciador.dados_clientes)
-            )
+            valores_cliente = obter_valores_unicos('cliente', gerenciador.dados_clientes)
+            filtro_cliente = st.selectbox("Cliente", ["Todos"] + valores_cliente)
         
         with col2:
-            filtro_status = st.selectbox(
-                "Status",
-                ["Todos"] + obter_valores_unicos('status', gerenciador.dados_clientes)
-            )
+            valores_motorista = obter_valores_unicos('nome', gerenciador.dados_clientes)
+            filtro_motorista = st.selectbox("Motorista", ["Todos"] + valores_motorista)
         
         with col3:
-            filtro_filial = st.selectbox(
-                "Filial",
-                ["Todas"] + obter_valores_unicos('filial', gerenciador.dados_clientes)
-            )
+            valores_empresa = obter_valores_unicos('empresa', gerenciador.dados_clientes)
+            filtro_empresa = st.selectbox("Empresa", ["Todas"] + valores_empresa)
+        
+        with col4:
+            filtro_status = st.selectbox("Status", ["Todos", "ATIVO", "INATIVO"])
         
         # Aplicar filtros
         dados_filtrados = gerenciador.dados_clientes.copy()
+        
+        if filtro_cliente != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['cliente'] == filtro_cliente]
+        
+        if filtro_motorista != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['nome'] == filtro_motorista]
         
         if filtro_empresa != "Todas":
             dados_filtrados = dados_filtrados[dados_filtrados['empresa'] == filtro_empresa]
@@ -1199,46 +1380,20 @@ elif pagina == "📋 Lista de Clientes":
         if filtro_status != "Todos":
             dados_filtrados = dados_filtrados[dados_filtrados['status'] == filtro_status]
         
-        if filtro_filial != "Todas":
-            dados_filtrados = dados_filtrados[dados_filtrados['filial'] == filtro_filial]
-        
-        # Mostrar estatísticas dos filtros
-        st.info(f"📊 Mostrando {len(dados_filtrados)} de {len(gerenciador.dados_clientes)} clientes")
-        
-        # Tabela de dados
-        st.subheader("📊 Dados dos Clientes")
+        st.subheader(f"📊 Resultados ({len(dados_filtrados)} clientes)")
         st.dataframe(dados_filtrados, use_container_width=True)
         
         # Botão de download
-        st.subheader("📥 Exportar Dados")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Download como CSV
+        if not dados_filtrados.empty:
             csv = dados_filtrados.to_csv(index=False)
             st.download_button(
-                label="📄 Baixar como CSV",
+                label="📥 Download CSV",
                 data=csv,
                 file_name=f"clientes_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
                 mime="text/csv"
             )
-        
-        with col2:
-            # Download como Excel
-            buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-                dados_filtrados.to_excel(writer, sheet_name='clientes', index=False)
-            
-            st.download_button(
-                label="📊 Baixar como Excel",
-                data=buffer.getvalue(),
-                file_name=f"clientes_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-                mime="application/vnd.ms-excel"
-            )
-    
     else:
-        st.info("Nenhum cliente cadastrado ainda.")
+        st.info("Nenhum cliente cadastrado.")
 
 # Footer
 st.sidebar.markdown("---")
