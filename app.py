@@ -267,17 +267,19 @@ class GerenciadorMotoristas:
         """Verifica se existem dados de clientes"""
         return self.dados_clientes is not None and not self.dados_clientes.empty
 
-    # MÉTODOS NOVOS ADICIONADOS PARA CORRIGIR O ERRO
+    # MÉTODOS ADICIONADOS PARA CORRIGIR OS ERROS
     def obter_usuarios_motoristas(self):
         """Obtém lista de usuários únicos dos motoristas"""
         try:
             if self.dados is not None and not self.dados.empty and 'usuario' in self.dados.columns:
-                usuarios = self.dados['usuario'].dropna().unique().tolist()
-                usuarios = [str(u) for u in usuarios if u and str(u).strip() and str(u).lower() != 'nan']
+                # Remove valores NaN e converte para string
+                usuarios = self.dados['usuario'].dropna().astype(str)
+                # Remove valores vazios e 'nan'
+                usuarios = [u.strip() for u in usuarios.unique() if u.strip() and u.lower() != 'nan']
                 return sorted(usuarios)
             return []
         except Exception as e:
-            st.error(f"Erro ao obter usuários: {e}")
+            st.error(f"Erro ao obter usuários dos motoristas: {e}")
             return []
 
     def obter_nome_por_usuario(self, usuario):
@@ -325,7 +327,7 @@ gerenciador = get_gerenciador()
 st.sidebar.title("🚗 Sistema de Motoristas")
 pagina = st.sidebar.selectbox(
     "Navegação",
-    ["📊 Dashboard", "👥 Cadastrar Motorista", "📤 Importar Excel", "✏️ Editar Motorista", "🗑️ Excluir Motorista", "📋 Lista Completa", 
+    ["📊 Dashboard", "👥 Cadastrar Motorista", "📤 Importar Excel", ✏️ Editar Motorista", "🗑️ Excluir Motorista", "📋 Lista Completa", 
      "🏢 Cadastrar Cliente", "✏️ Editar Cliente", "🗑️ Excluir Cliente", "📋 Lista de Clientes"]
 )
 
