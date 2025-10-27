@@ -540,7 +540,7 @@ elif pagina == "📤 Importar Excel":
     
     1. **Preparar o arquivo Excel** com as colunas conforme modelo
     2. **Colunas obrigatórias**: `nome`, `usuario`, `empresa`
-    3. **Formato suportado**: .xlsx ou .xls
+    3. **Formato suportado**: .xlsx or .xls
     4. **Dados duplicados** serão atualizados (baseado em nome + usuário)
     """)
     
@@ -985,34 +985,39 @@ elif pagina == "🏢 Cadastrar Cliente":
             
             with col1:
                 cliente = st.text_input("Cliente*")
-                nome = st.text_input("Nome*")
-                usuario = st.selectbox(
+                # Campo nome será preenchido automaticamente
+                usuario_selecionado = st.selectbox(
                     "Usuário do Motorista*",
                     options=[""] + usuarios_motoristas,
                     help="Selecione o usuário do motorista associado a este cliente"
                 )
+                # Busca automaticamente o nome do motorista baseado no usuário selecionado
+                nome_motorista = ""
+                if usuario_selecionado:
+                    nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                
+                # Exibe o nome do motorista (somente leitura)
+                nome = st.text_input("Nome do Motorista*", value=nome_motorista, disabled=True)
             
             with col2:
                 empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"])
                 filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"])
                 status = st.selectbox("Status*", ["ATIVO", "INATIVO"])
             
-            # Mostra o nome do motorista se um usuário for selecionado
-            if usuario:
-                nome_motorista = gerenciador.obter_nome_por_usuario(usuario)
-                if nome_motorista:
-                    st.info(f"**Motorista associado:** {nome_motorista}")
-                else:
-                    st.warning("Usuário não encontrado na base de motoristas")
+            # Mostra informações do motorista associado
+            if usuario_selecionado and nome_motorista:
+                st.info(f"**Motorista associado:** {nome_motorista} (Usuário: {usuario_selecionado})")
+            elif usuario_selecionado:
+                st.warning("Usuário não encontrado na base de motoristas")
             
             submitted = st.form_submit_button("💾 Cadastrar Cliente")
             
             if submitted:
-                if cliente and nome and usuario and empresa:
+                if cliente and nome_motorista and usuario_selecionado and empresa:
                     dados_cliente = {
                         'cliente': cliente,
-                        'nome': nome,
-                        'usuario': usuario,
+                        'nome': nome_motorista,  # Usa o nome obtido automaticamente
+                        'usuario': usuario_selecionado,
                         'empresa': empresa,
                         'filial': filial,
                         'status': status
@@ -1020,11 +1025,12 @@ elif pagina == "🏢 Cadastrar Cliente":
                     
                     if gerenciador.adicionar_cliente(dados_cliente):
                         st.success("✅ Cliente cadastrado com sucesso!")
+                        st.success("✅ Campo 'Associação a Clientes' do motorista atualizado para 'Sim'")
                         st.balloons()
                     else:
                         st.error("❌ Erro ao cadastrar cliente")
                 else:
-                    st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Nome, Usuário, Empresa)")
+                    st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Usuário do Motorista, Empresa)")
     else:
         st.warning("⚠️ Não há motoristas cadastrados. Cadastre motoristas primeiro.")
 
@@ -1051,7 +1057,6 @@ elif pagina == "✏️ Editar Cliente":
                 
                 with col1:
                     cliente = st.text_input("Cliente*", value=cliente_data.get('cliente', ''))
-                    nome = st.text_input("Nome*", value=cliente_data.get('nome', ''))
                     
                     # Encontra o índice do usuário atual na lista
                     usuario_atual = cliente_data.get('usuario', '')
@@ -1059,11 +1064,22 @@ elif pagina == "✏️ Editar Cliente":
                     if usuario_atual in usuarios_motoristas:
                         indice_usuario = usuarios_motoristas.index(usuario_atual) + 1
                     
-                    usuario = st.selectbox(
+                    usuario_selecionado = st.selectbox(
                         "Usuário do Motorista*",
                         options=[""] + usuarios_motoristas,
                         index=indice_usuario
                     )
+                    
+                    # Busca automaticamente o nome do motorista baseado no usuário selecionado
+                    nome_motorista = ""
+                    if usuario_selecionado:
+                        nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                    elif usuario_atual:
+                        # Mantém o nome atual se nenhum usuário for selecionado
+                        nome_motorista = cliente_data.get('nome', '')
+                    
+                    # Exibe o nome do motorista (somente leitura)
+                    nome = st.text_input("Nome do Motorista*", value=nome_motorista, disabled=True)
                 
                 with col2:
                     empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"],
@@ -1073,22 +1089,20 @@ elif pagina == "✏️ Editar Cliente":
                     status = st.selectbox("Status*", ["ATIVO", "INATIVO"],
                                         index=["ATIVO", "INATIVO"].index(cliente_data.get('status', 'ATIVO')))
                 
-                # Mostra o nome do motorista se um usuário for selecionado
-                if usuario:
-                    nome_motorista = gerenciador.obter_nome_por_usuario(usuario)
-                    if nome_motorista:
-                        st.info(f"**Motorista associado:** {nome_motorista}")
-                    else:
-                        st.warning("Usuário não encontrado na base de motoristas")
+                # Mostra informações do motorista associado
+                if usuario_selecionado and nome_motorista:
+                    st.info(f"**Motorista associado:** {nome_motorista} (Usuário: {usuario_selecionado})")
+                elif usuario_selecionado:
+                    st.warning("Usuário não encontrado na base de motoristas")
                 
                 submitted = st.form_submit_button("💾 Atualizar Cliente")
                 
                 if submitted:
-                    if cliente and nome and usuario and empresa:
+                    if cliente and nome_motorista and usuario_selecionado and empresa:
                         dados_atualizados = {
                             'cliente': cliente,
-                            'nome': nome,
-                            'usuario': usuario,
+                            'nome': nome_motorista,  # Usa o nome obtido automaticamente
+                            'usuario': usuario_selecionado,
                             'empresa': empresa,
                             'filial': filial,
                             'status': status
@@ -1096,11 +1110,12 @@ elif pagina == "✏️ Editar Cliente":
                         
                         if gerenciador.atualizar_cliente(index, dados_atualizados):
                             st.success("✅ Cliente atualizado com sucesso!")
+                            st.success("✅ Campo 'Associação a Clientes' do motorista atualizado automaticamente")
                             st.balloons()
                         else:
                             st.error("❌ Erro ao atualizar cliente")
                     else:
-                        st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Nome, Usuário, Empresa)")
+                        st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Usuário do Motorista, Empresa)")
     else:
         st.info("Nenhum cliente cadastrado para editar.")
 
@@ -1125,7 +1140,7 @@ elif pagina == "🗑️ Excluir Cliente":
             with col1:
                 st.subheader("Dados do Cliente")
                 st.write(f"**Cliente:** {cliente_data.get('cliente', '')}")
-                st.write(f"**Nome:** {cliente_data.get('nome', '')}")
+                st.write(f"**Motorista:** {cliente_data.get('nome', '')}")
                 st.write(f"**Usuário do Motorista:** {cliente_data.get('usuario', '')}")
                 st.write(f"**Empresa:** {cliente_data.get('empresa', '')}")
                 st.write(f"**Status:** {cliente_data.get('status', '')}")
@@ -1138,6 +1153,7 @@ elif pagina == "🗑️ Excluir Cliente":
                     if confirmacao == "EXCLUIR":
                         if gerenciador.excluir_cliente(index):
                             st.success("✅ Cliente excluído com sucesso!")
+                            st.success("✅ Campo 'Associação a Clientes' do motorista atualizado para 'Não'")
                             st.rerun()
                         else:
                             st.error("❌ Erro ao excluir cliente")
