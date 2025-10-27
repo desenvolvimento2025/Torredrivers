@@ -208,6 +208,12 @@ class GerenciadorMotoristas:
             if self.dados_clientes is None:
                 self.dados_clientes = pd.DataFrame(columns=ESTRUTURA_CLIENTES)
             self.dados_clientes = pd.concat([self.dados_clientes, novo_registro], ignore_index=True)
+            
+            # Atualiza o campo 'associacao-clientes' do motorista para 'Sim'
+            usuario_motorista = dados_cliente.get('usuario', '')
+            if usuario_motorista:
+                self.atualizar_associacao_motorista(usuario_motorista, 'Sim')
+            
             return self.salvar_dados()
         except Exception as e:
             st.error(f"Erro ao adicionar cliente: {e}")
@@ -216,9 +222,25 @@ class GerenciadorMotoristas:
     def atualizar_cliente(self, index, dados_cliente):
         """Atualiza cliente existente"""
         try:
+            # Obtém o usuário atual antes da atualização
+            usuario_antigo = self.dados_clientes.iloc[index]['usuario']
+            
             for coluna, valor in dados_cliente.items():
                 if coluna in self.dados_clientes.columns:
                     self.dados_clientes.at[index, coluna] = valor
+            
+            # Obtém o novo usuário após a atualização
+            usuario_novo = dados_cliente.get('usuario', '')
+            
+            # Se o usuário mudou, atualiza ambos os motoristas
+            if usuario_antigo != usuario_novo:
+                # Remove associação do motorista antigo
+                if usuario_antigo:
+                    self.atualizar_associacao_motorista(usuario_antigo, 'Não')
+                # Adiciona associação ao novo motorista
+                if usuario_novo:
+                    self.atualizar_associacao_motorista(usuario_novo, 'Sim')
+            
             return self.salvar_dados()
         except Exception as e:
             st.error(f"Erro ao atualizar cliente: {e}")
@@ -227,7 +249,15 @@ class GerenciadorMotoristas:
     def excluir_cliente(self, index):
         """Exclui cliente"""
         try:
+            # Obtém o usuário do motorista associado antes de excluir
+            usuario_motorista = self.dados_clientes.iloc[index]['usuario']
+            
             self.dados_clientes = self.dados_clientes.drop(index).reset_index(drop=True)
+            
+            # Atualiza o campo 'associacao-clientes' do motorista para 'Não'
+            if usuario_motorista:
+                self.atualizar_associacao_motorista(usuario_motorista, 'Não')
+            
             return self.salvar_dados()
         except Exception as e:
             st.error(f"Erro ao excluir cliente: {e}")
@@ -265,6 +295,24 @@ class GerenciadorMotoristas:
         except Exception as e:
             st.error(f"Erro ao obter nome por usuário: {e}")
             return ""
+
+    def atualizar_associacao_motorista(self, usuario, valor):
+        """Atualiza o campo 'associacao-clientes' do motorista"""
+        try:
+            if self.dados is not None and not self.dados.empty and 'usuario' in self.dados.columns:
+                # Encontra o índice do motorista pelo usuário
+                usuario_str = str(usuario).strip()
+                self.dados['usuario'] = self.dados['usuario'].fillna('').astype(str)
+                indices = self.dados[self.dados['usuario'].str.strip() == usuario_str].index
+                
+                if not indices.empty:
+                    index_motorista = indices[0]
+                    self.dados.at[index_motorista, 'associacao-clientes'] = valor
+                    return True
+            return False
+        except Exception as e:
+            st.error(f"Erro ao atualizar associação do motorista: {e}")
+            return False
 
 # Inicialização do gerenciador
 @st.cache_resource
@@ -1131,6 +1179,7 @@ elif pagina == "🏢 Cadastrar Cliente":
                     
                     if gerenciador.adicionar_cliente(dados_cliente):
                         st.success("✅ Cliente cadastrado com sucesso!")
+                        st.success("✅ Campo 'Associação a Clientes' do motorista atualizado para 'Sim'")
                         st.balloons()
                     else:
                         st.error("❌ Erro ao cadastrar cliente")
@@ -1218,6 +1267,7 @@ elif pagina == "✏️ Editar Cliente":
                         
                         if gerenciador.atualizar_cliente(index, dados_atualizados):
                             st.success("✅ Cliente atualizado com sucesso!")
+                            st.success("✅ Campo 'Associação a Clientes' do motorista atualizado automaticamente")
                             st.rerun()
                         else:
                             st.error("❌ Erro ao atualizar cliente")
@@ -1255,6 +1305,7 @@ elif pagina == "🗑️ Excluir Cliente":
                 if st.button("🗑️ Confirmar Exclusão", type="primary"):
                     if gerenciador.excluir_cliente(index):
                         st.success("✅ Cliente excluído com sucesso!")
+                        st.success("✅ Campo 'Associação a Clientes' do motorista atualizado para 'Não'")
                         st.rerun()
                     else:
                         st.error("❌ Erro ao excluir cliente")
