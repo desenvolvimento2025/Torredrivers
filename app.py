@@ -242,21 +242,25 @@ class GerenciadorMotoristas:
         try:
             if self.dados is not None and not self.dados.empty and 'usuario' in self.dados.columns:
                 usuarios = self.dados['usuario'].unique().tolist()
-                usuarios = [str(u) for u in usuarios if pd.notna(u) and u != ""]
-                return usuarios
+                usuarios = [str(u) for u in usuarios if pd.notna(u) and str(u) != "" and str(u) != "nan"]
+                return sorted(usuarios)
             return []
-        except Exception:
+        except Exception as e:
+            st.error(f"Erro ao obter usuários: {e}")
             return []
 
     def obter_nome_por_usuario(self, usuario):
         """Obtém o nome do motorista baseado no usuário"""
         try:
-            if self.dados is not None and not self.dados.empty:
-                motorista = self.dados[self.dados['usuario'] == usuario]
+            if self.dados is not None and not self.dados.empty and 'usuario' in self.dados.columns:
+                # Converte para string para comparação
+                usuario_str = str(usuario)
+                motorista = self.dados[self.dados['usuario'].astype(str) == usuario_str]
                 if not motorista.empty:
                     return motorista.iloc[0]['nome']
             return ""
-        except Exception:
+        except Exception as e:
+            st.error(f"Erro ao obter nome por usuário: {e}")
             return ""
 
 # Inicialização do gerenciador
@@ -1055,6 +1059,10 @@ elif pagina == "📋 Lista Completa":
 elif pagina == "🏢 Cadastrar Cliente":
     st.title("🏢 Cadastrar Novo Cliente")
     
+    # Garante que os dados estão carregados
+    if gerenciador.dados is None:
+        gerenciador.carregar_dados()
+    
     # Busca os usuários dos motoristas para o dropdown
     usuarios_motoristas = gerenciador.obter_usuarios_motoristas()
     
@@ -1106,6 +1114,10 @@ elif pagina == "🏢 Cadastrar Cliente":
 # Página: Editar Cliente
 elif pagina == "✏️ Editar Cliente":
     st.title("✏️ Editar Cliente")
+    
+    # Garante que os dados estão carregados
+    if gerenciador.dados is None:
+        gerenciador.carregar_dados()
     
     if gerenciador.tem_dados_clientes():
         cliente_selecionado = st.selectbox(
