@@ -237,14 +237,13 @@ class GerenciadorMotoristas:
         """Verifica se existem dados de clientes"""
         return self.dados_clientes is not None and not self.dados_clientes.empty
 
+    # MÉTODOS NOVOS ADICIONADOS PARA CORRIGIR O ERRO
     def obter_usuarios_motoristas(self):
         """Obtém lista de usuários únicos dos motoristas"""
         try:
             if self.dados is not None and not self.dados.empty and 'usuario' in self.dados.columns:
-                # Remove valores NaN e converte para string
-                usuarios = self.dados['usuario'].dropna().astype(str).unique().tolist()
-                # Remove valores vazios e 'nan'
-                usuarios = [u for u in usuarios if u.strip() and u.lower() != 'nan']
+                usuarios = self.dados['usuario'].dropna().unique().tolist()
+                usuarios = [str(u) for u in usuarios if u and str(u).strip() and str(u).lower() != 'nan']
                 return sorted(usuarios)
             return []
         except Exception as e:
@@ -792,7 +791,7 @@ elif pagina == "🗑️ Excluir Motorista":
     else:
         st.info("Nenhum motorista cadastrado para excluir.")
 
-# Página: Lista Completa (CONFIGURAÇÃO ORIGINAL RESTAURADA)
+# Página: Lista Completa
 elif pagina == "📋 Lista Completa":
     st.title("📋 Lista Completa de Motoristas")
     
@@ -1069,7 +1068,7 @@ elif pagina == "📋 Lista Completa":
     else:
         st.info("Nenhum motorista cadastrado.")
 
-# PÁGINAS PARA CLIENTES (CONFIGURAÇÃO ORIGINAL RESTAURADA)
+# PÁGINAS PARA CLIENTES
 elif pagina == "🏢 Cadastrar Cliente":
     st.title("🏢 Cadastrar Novo Cliente")
     
