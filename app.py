@@ -1197,7 +1197,8 @@ elif pagina == "✏️ Editar Cliente":
     if gerenciador.dados is None:
         gerenciador.carregar_dados()
     
-    if gerenciador.tem_dados_clientes() and gerenciador.dados is not None and not gerenciador.dados.empty:
+    # CORREÇÃO APLICADA: Verificação corrigida para dados de clientes
+    if gerenciador.dados_clientes is not None and not gerenciador.dados_clientes.empty:
         cliente_selecionado = st.selectbox(
             "Selecione o cliente para editar",
             gerenciador.dados_clientes['cliente'].tolist()
@@ -1274,7 +1275,7 @@ elif pagina == "✏️ Editar Cliente":
                     else:
                         st.warning("⚠️ Preencha os campos obrigatórios")
     else:
-        st.warning("⚠️ Não há motoristas ou clientes cadastrados.")
+        st.info("ℹ️ Nenhum cliente cadastrado para editar.")
 
 # Página: Excluir Cliente
 elif pagina == "🗑️ Excluir Cliente":
