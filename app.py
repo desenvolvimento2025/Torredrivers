@@ -1063,53 +1063,58 @@ elif pagina == "🏢 Cadastrar Cliente":
     if gerenciador.dados is None:
         gerenciador.carregar_dados()
     
-    # Busca os usuários dos motoristas para o dropdown
-    usuarios_motoristas = gerenciador.obter_usuarios_motoristas()
-    
-    with st.form("form_cliente"):
-        st.subheader("Informações do Cliente")
-        col1, col2 = st.columns(2)
+    # Verifica se há dados de motoristas antes de prosseguir
+    if gerenciador.dados is not None and not gerenciador.dados.empty:
+        # Busca os usuários dos motoristas para o dropdown
+        usuarios_motoristas = gerenciador.obter_usuarios_motoristas()
         
-        with col1:
-            cliente = st.text_input("Nome do Cliente*")
-            # Dropdown com os usuários dos motoristas
-            usuario_selecionado = st.selectbox("Usuário do Motorista*", [""] + usuarios_motoristas)
-            # Mostra o nome do motorista associado ao usuário selecionado
-            if usuario_selecionado:
-                nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                if nome_motorista:
-                    st.info(f"**Motorista associado:** {nome_motorista}")
+        with st.form("form_cliente"):
+            st.subheader("Informações do Cliente")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                cliente = st.text_input("Nome do Cliente*")
+                # Dropdown com os usuários dos motoristas
+                usuario_selecionado = st.selectbox("Usuário do Motorista*", [""] + usuarios_motoristas)
+                # Mostra o nome do motorista associado ao usuário selecionado
+                if usuario_selecionado:
+                    nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                    if nome_motorista:
+                        st.info(f"**Motorista associado:** {nome_motorista}")
+                    else:
+                        st.warning("Usuário não encontrado na tabela de motoristas")
+            
+            with col2:
+                empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"])
+                filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"])
+                status = st.selectbox("Status*", ["ATIVO", "INATIVO"])
+            
+            submitted = st.form_submit_button("💾 Cadastrar Cliente")
+            
+            if submitted:
+                if cliente and usuario_selecionado and empresa:
+                    # Obtém o nome do motorista automaticamente
+                    nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                    
+                    dados_cliente = {
+                        'cliente': cliente,
+                        'nome': nome_motorista,
+                        'usuario': usuario_selecionado,
+                        'empresa': empresa,
+                        'filial': filial,
+                        'status': status
+                    }
+                    
+                    if gerenciador.adicionar_cliente(dados_cliente):
+                        st.success("✅ Cliente cadastrado com sucesso!")
+                        st.balloons()
+                    else:
+                        st.error("❌ Erro ao cadastrar cliente")
                 else:
-                    st.warning("Usuário não encontrado na tabela de motoristas")
-        
-        with col2:
-            empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"])
-            filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"])
-            status = st.selectbox("Status*", ["ATIVO", "INATIVO"])
-        
-        submitted = st.form_submit_button("💾 Cadastrar Cliente")
-        
-        if submitted:
-            if cliente and usuario_selecionado and empresa:
-                # Obtém o nome do motorista automaticamente
-                nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                
-                dados_cliente = {
-                    'cliente': cliente,
-                    'nome': nome_motorista,
-                    'usuario': usuario_selecionado,
-                    'empresa': empresa,
-                    'filial': filial,
-                    'status': status
-                }
-                
-                if gerenciador.adicionar_cliente(dados_cliente):
-                    st.success("✅ Cliente cadastrado com sucesso!")
-                    st.balloons()
-                else:
-                    st.error("❌ Erro ao cadastrar cliente")
-            else:
-                st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Usuário do Motorista, Empresa)")
+                    st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Usuário do Motorista, Empresa)")
+    else:
+        st.warning("⚠️ Não há motoristas cadastrados. É necessário cadastrar motoristas antes de associar clientes.")
+        st.info("Vá para a página '👥 Cadastrar Motorista' para adicionar motoristas primeiro.")
 
 # Página: Editar Cliente
 elif pagina == "✏️ Editar Cliente":
@@ -1119,7 +1124,7 @@ elif pagina == "✏️ Editar Cliente":
     if gerenciador.dados is None:
         gerenciador.carregar_dados()
     
-    if gerenciador.tem_dados_clientes():
+    if gerenciador.tem_dados_clientes() and gerenciador.dados is not None and not gerenciador.dados.empty:
         cliente_selecionado = st.selectbox(
             "Selecione o cliente para editar",
             gerenciador.dados_clientes['cliente'].tolist()
@@ -1184,7 +1189,7 @@ elif pagina == "✏️ Editar Cliente":
                     else:
                         st.warning("⚠️ Preencha os campos obrigatórios")
     else:
-        st.info("Nenhum cliente cadastrado para editar.")
+        st.warning("⚠️ Não há motoristas ou clientes cadastrados.")
 
 # Página: Excluir Cliente
 elif pagina == "🗑️ Excluir Cliente":
