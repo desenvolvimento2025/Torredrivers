@@ -319,7 +319,10 @@ class GerenciadorMotoristas:
 # Inicialização do gerenciador
 @st.cache_resource
 def get_gerenciador():
-    return GerenciadorMotoristas()
+    gerenciador = GerenciadorMotoristas()
+    # Carrega os dados imediatamente após criar a instância
+    gerenciador.carregar_dados()
+    return gerenciador
 
 gerenciador = get_gerenciador()
 
@@ -340,10 +343,6 @@ if tempo_decorrido.total_seconds() > 3600:  # 1 hora
     st.session_state.ultima_atualizacao = datetime.now()
     gerenciador.carregar_dados()
     st.rerun()
-
-# Carrega dados
-if gerenciador.dados is None:
-    gerenciador.carregar_dados()
 
 # Função auxiliar para obter valores únicos de colunas com segurança
 def obter_valores_unicos(coluna, dados):
@@ -974,10 +973,6 @@ elif pagina == "📋 Lista Completa":
 # Página: Cadastrar Cliente
 elif pagina == "🏢 Cadastrar Cliente":
     st.title("🏢 Cadastrar Novo Cliente")
-    
-    # Carrega os dados primeiro
-    if gerenciador.dados is None:
-        gerenciador.carregar_dados()
     
     # Verifica se há motoristas cadastrados
     if gerenciador.dados is not None and not gerenciador.dados.empty:
