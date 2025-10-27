@@ -241,8 +241,10 @@ class GerenciadorMotoristas:
         """Obtém lista de usuários únicos dos motoristas"""
         try:
             if self.dados is not None and not self.dados.empty and 'usuario' in self.dados.columns:
-                usuarios = self.dados['usuario'].dropna().unique().tolist()
-                usuarios = [str(u) for u in usuarios if u and str(u).strip() and str(u).lower() != 'nan']
+                # Remove valores NaN e converte para string
+                usuarios = self.dados['usuario'].dropna().astype(str).unique().tolist()
+                # Remove valores vazios e 'nan'
+                usuarios = [u for u in usuarios if u.strip() and u.lower() != 'nan']
                 return sorted(usuarios)
             return []
         except Exception as e:
@@ -893,10 +895,10 @@ elif pagina == "🏢 Cadastrar Cliente":
         with col1:
             cliente = st.text_input("Código do Cliente*")
             nome = st.text_input("Nome do Cliente*")
+            usuarios_disponiveis = gerenciador.obter_usuarios_motoristas()
             usuario = st.selectbox(
                 "Usuário Associado*",
-                [""] + gerenciador.obter_usuarios_motoristas(),
-                help="Selecione o usuário do motorista associado a este cliente"
+                [""] + (usuarios_disponiveis if usuarios_disponiveis else [])
             )
         
         with col2:
@@ -904,6 +906,7 @@ elif pagina == "🏢 Cadastrar Cliente":
             filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"])
             status = st.selectbox("Status*", ["ATIVO", "INATIVO"])
         
+        # Botão de envio CORRETO
         submitted = st.form_submit_button("💾 Cadastrar Cliente")
         
         if submitted:
@@ -948,10 +951,19 @@ elif pagina == "✏️ Editar Cliente":
                 with col1:
                     cliente = st.text_input("Código do Cliente*", value=cliente_data.get('cliente', ''))
                     nome = st.text_input("Nome do Cliente*", value=cliente_data.get('nome', ''))
+                    usuarios_disponiveis = gerenciador.obter_usuarios_motoristas()
+                    
+                    # Encontra o índice correto para o usuário atual
+                    usuario_atual = cliente_data.get('usuario', '')
+                    opcoes_usuarios = [""] + (usuarios_disponiveis if usuarios_disponiveis else [])
+                    indice_atual = 0
+                    if usuario_atual in opcoes_usuarios:
+                        indice_atual = opcoes_usuarios.index(usuario_atual)
+                    
                     usuario = st.selectbox(
                         "Usuário Associado*",
-                        [""] + gerenciador.obter_usuarios_motoristas(),
-                        index=([""] + gerenciador.obter_usuarios_motoristas()).index(cliente_data.get('usuario', '')) if cliente_data.get('usuario', '') in [""] + gerenciador.obter_usuarios_motoristas() else 0
+                        opcoes_usuarios,
+                        index=indice_atual
                     )
                 
                 with col2:
@@ -962,6 +974,7 @@ elif pagina == "✏️ Editar Cliente":
                     status = st.selectbox("Status*", ["ATIVO", "INATIVO"],
                                         index=["ATIVO", "INATIVO"].index(cliente_data.get('status', 'ATIVO')))
                 
+                # Botão de envio CORRETO
                 submitted = st.form_submit_button("💾 Atualizar Cliente")
                 
                 if submitted:
