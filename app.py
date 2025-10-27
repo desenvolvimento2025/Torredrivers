@@ -1066,7 +1066,11 @@ elif pagina == "🏢 Cadastrar Cliente":
     # Verifica se há dados de motoristas antes de prosseguir
     if gerenciador.dados is not None and not gerenciador.dados.empty:
         # Busca os usuários dos motoristas para o dropdown
-        usuarios_motoristas = gerenciador.obter_usuarios_motoristas()
+        try:
+            usuarios_motoristas = gerenciador.obter_usuarios_motoristas()
+        except Exception as e:
+            st.error(f"Erro ao carregar usuários dos motoristas: {e}")
+            usuarios_motoristas = []
         
         with st.form("form_cliente"):
             st.subheader("Informações do Cliente")
@@ -1078,11 +1082,14 @@ elif pagina == "🏢 Cadastrar Cliente":
                 usuario_selecionado = st.selectbox("Usuário do Motorista*", [""] + usuarios_motoristas)
                 # Mostra o nome do motorista associado ao usuário selecionado
                 if usuario_selecionado:
-                    nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                    if nome_motorista:
-                        st.info(f"**Motorista associado:** {nome_motorista}")
-                    else:
-                        st.warning("Usuário não encontrado na tabela de motoristas")
+                    try:
+                        nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                        if nome_motorista:
+                            st.info(f"**Motorista associado:** {nome_motorista}")
+                        else:
+                            st.warning("Usuário não encontrado na tabela de motoristas")
+                    except Exception as e:
+                        st.error(f"Erro ao buscar motorista: {e}")
             
             with col2:
                 empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"])
@@ -1094,7 +1101,11 @@ elif pagina == "🏢 Cadastrar Cliente":
             if submitted:
                 if cliente and usuario_selecionado and empresa:
                     # Obtém o nome do motorista automaticamente
-                    nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                    try:
+                        nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                    except Exception as e:
+                        st.error(f"Erro ao obter nome do motorista: {e}")
+                        nome_motorista = ""
                     
                     dados_cliente = {
                         'cliente': cliente,
@@ -1135,7 +1146,11 @@ elif pagina == "✏️ Editar Cliente":
             cliente_data = gerenciador.dados_clientes.iloc[index]
             
             # Busca os usuários dos motoristas para o dropdown
-            usuarios_motoristas = gerenciador.obter_usuarios_motoristas()
+            try:
+                usuarios_motoristas = gerenciador.obter_usuarios_motoristas()
+            except Exception as e:
+                st.error(f"Erro ao carregar usuários dos motoristas: {e}")
+                usuarios_motoristas = []
             
             with st.form("form_edicao_cliente"):
                 st.subheader("Informações do Cliente")
@@ -1151,11 +1166,14 @@ elif pagina == "✏️ Editar Cliente":
                     
                     # Mostra o nome do motorista associado ao usuário selecionado
                     if usuario_selecionado:
-                        nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                        if nome_motorista:
-                            st.info(f"**Motorista associado:** {nome_motorista}")
-                        else:
-                            st.warning("Usuário não encontrado na tabela de motoristas")
+                        try:
+                            nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                            if nome_motorista:
+                                st.info(f"**Motorista associado:** {nome_motorista}")
+                            else:
+                                st.warning("Usuário não encontrado na tabela de motoristas")
+                        except Exception as e:
+                            st.error(f"Erro ao buscar motorista: {e}")
                 
                 with col2:
                     empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"],
@@ -1170,7 +1188,11 @@ elif pagina == "✏️ Editar Cliente":
                 if submitted:
                     if cliente and usuario_selecionado and empresa:
                         # Obtém o nome do motorista automaticamente
-                        nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                        try:
+                            nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                        except Exception as e:
+                            st.error(f"Erro ao obter nome do motorista: {e}")
+                            nome_motorista = ""
                         
                         dados_atualizados = {
                             'cliente': cliente,
