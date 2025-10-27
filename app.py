@@ -237,6 +237,28 @@ class GerenciadorMotoristas:
         """Verifica se existem dados de clientes"""
         return self.dados_clientes is not None and not self.dados_clientes.empty
 
+    def obter_usuarios_motoristas(self):
+        """Obtém lista de usuários únicos dos motoristas"""
+        try:
+            if self.dados is not None and not self.dados.empty and 'usuario' in self.dados.columns:
+                usuarios = self.dados['usuario'].unique().tolist()
+                usuarios = [str(u) for u in usuarios if pd.notna(u) and u != ""]
+                return usuarios
+            return []
+        except Exception:
+            return []
+
+    def obter_nome_por_usuario(self, usuario):
+        """Obtém o nome do motorista baseado no usuário"""
+        try:
+            if self.dados is not None and not self.dados.empty:
+                motorista = self.dados[self.dados['usuario'] == usuario]
+                if not motorista.empty:
+                    return motorista.iloc[0]['nome']
+            return ""
+        except Exception:
+            return ""
+
 # Inicialização do gerenciador
 @st.cache_resource
 def get_gerenciador():
@@ -1033,10 +1055,8 @@ elif pagina == "📋 Lista Completa":
 elif pagina == "🏢 Cadastrar Cliente":
     st.title("🏢 Cadastrar Novo Cliente")
     
-    # Busca os nomes dos motoristas para o dropdown
-    nomes_motoristas = []
-    if gerenciador.dados is not None and not gerenciador.dados.empty:
-        nomes_motoristas = obter_valores_unicos('nome', gerenciador.dados)
+    # Busca os usuários dos motoristas para o dropdown
+    usuarios_motoristas = gerenciador.obter_usuarios_motoristas()
     
     with st.form("form_cliente"):
         st.subheader("Informações do Cliente")
@@ -1044,9 +1064,15 @@ elif pagina == "🏢 Cadastrar Cliente":
         
         with col1:
             cliente = st.text_input("Nome do Cliente*")
-            # Dropdown com os nomes dos motoristas
-            nome_motorista = st.selectbox("Nome do Motorista*", [""] + nomes_motoristas)
-            usuario = st.text_input("Usuário*")
+            # Dropdown com os usuários dos motoristas
+            usuario_selecionado = st.selectbox("Usuário do Motorista*", [""] + usuarios_motoristas)
+            # Mostra o nome do motorista associado ao usuário selecionado
+            if usuario_selecionado:
+                nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                if nome_motorista:
+                    st.info(f"**Motorista associado:** {nome_motorista}")
+                else:
+                    st.warning("Usuário não encontrado na tabela de motoristas")
         
         with col2:
             empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"])
@@ -1056,11 +1082,14 @@ elif pagina == "🏢 Cadastrar Cliente":
         submitted = st.form_submit_button("💾 Cadastrar Cliente")
         
         if submitted:
-            if cliente and nome_motorista and usuario:
+            if cliente and usuario_selecionado and empresa:
+                # Obtém o nome do motorista automaticamente
+                nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                
                 dados_cliente = {
                     'cliente': cliente,
                     'nome': nome_motorista,
-                    'usuario': usuario,
+                    'usuario': usuario_selecionado,
                     'empresa': empresa,
                     'filial': filial,
                     'status': status
@@ -1072,7 +1101,7 @@ elif pagina == "🏢 Cadastrar Cliente":
                 else:
                     st.error("❌ Erro ao cadastrar cliente")
             else:
-                st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Nome do Motorista, Usuário)")
+                st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Usuário do Motorista, Empresa)")
 
 # Página: Editar Cliente
 elif pagina == "✏️ Editar Cliente":
@@ -1088,10 +1117,8 @@ elif pagina == "✏️ Editar Cliente":
             index = gerenciador.dados_clientes[gerenciador.dados_clientes['cliente'] == cliente_selecionado].index[0]
             cliente_data = gerenciador.dados_clientes.iloc[index]
             
-            # Busca os nomes dos motoristas para o dropdown
-            nomes_motoristas = []
-            if gerenciador.dados is not None and not gerenciador.dados.empty:
-                nomes_motoristas = obter_valores_unicos('nome', gerenciador.dados)
+            # Busca os usuários dos motoristas para o dropdown
+            usuarios_motoristas = gerenciador.obter_usuarios_motoristas()
             
             with st.form("form_edicao_cliente"):
                 st.subheader("Informações do Cliente")
@@ -1099,12 +1126,19 @@ elif pagina == "✏️ Editar Cliente":
                 
                 with col1:
                     cliente = st.text_input("Nome do Cliente*", value=cliente_data.get('cliente', ''))
-                    # Encontra o índice correto para o dropdown
-                    nome_atual = cliente_data.get('nome', '')
-                    opcoes_motoristas = [""] + nomes_motoristas
-                    indice_atual = opcoes_motoristas.index(nome_atual) if nome_atual in opcoes_motoristas else 0
-                    nome_motorista = st.selectbox("Nome do Motorista*", opcoes_motoristas, index=indice_atual)
-                    usuario = st.text_input("Usuário*", value=cliente_data.get('usuario', ''))
+                    # Encontra o índice correto para o dropdown de usuários
+                    usuario_atual = cliente_data.get('usuario', '')
+                    opcoes_usuarios = [""] + usuarios_motoristas
+                    indice_atual = opcoes_usuarios.index(usuario_atual) if usuario_atual in opcoes_usuarios else 0
+                    usuario_selecionado = st.selectbox("Usuário do Motorista*", opcoes_usuarios, index=indice_atual)
+                    
+                    # Mostra o nome do motorista associado ao usuário selecionado
+                    if usuario_selecionado:
+                        nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                        if nome_motorista:
+                            st.info(f"**Motorista associado:** {nome_motorista}")
+                        else:
+                            st.warning("Usuário não encontrado na tabela de motoristas")
                 
                 with col2:
                     empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"],
@@ -1117,11 +1151,14 @@ elif pagina == "✏️ Editar Cliente":
                 submitted = st.form_submit_button("💾 Atualizar Cliente")
                 
                 if submitted:
-                    if cliente and nome_motorista and usuario:
+                    if cliente and usuario_selecionado and empresa:
+                        # Obtém o nome do motorista automaticamente
+                        nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                        
                         dados_atualizados = {
                             'cliente': cliente,
                             'nome': nome_motorista,
-                            'usuario': usuario,
+                            'usuario': usuario_selecionado,
                             'empresa': empresa,
                             'filial': filial,
                             'status': status
