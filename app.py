@@ -327,7 +327,7 @@ gerenciador = get_gerenciador()
 st.sidebar.title("🚗 Sistema de Motoristas")
 pagina = st.sidebar.selectbox(
     "Navegação",
-    ["📊 Dashboard", "👥 Cadastrar Motorista", "📤 Importar Excel", ✏️ Editar Motorista", "🗑️ Excluir Motorista", "📋 Lista Completa", 
+    ["📊 Dashboard", "👥 Cadastrar Motorista", "📤 Importar Excel", "✏️ Editar Motorista", "🗑️ Excluir Motorista", "📋 Lista Completa", 
      "🏢 Cadastrar Cliente", "✏️ Editar Cliente", "🗑️ Excluir Cliente", "📋 Lista de Clientes"]
 )
 
