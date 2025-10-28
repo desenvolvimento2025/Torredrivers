@@ -250,6 +250,29 @@ class GerenciadorMotoristas:
             st.error(f"Erro ao obter usuários: {e}")
             return []
 
+    def obter_dados_motorista_por_usuario(self, usuario):
+        """Obtém os dados do motorista (nome, usuario, empresa, filial, status) baseado no usuário"""
+        try:
+            if self.dados is not None and not self.dados.empty and 'usuario' in self.dados.columns:
+                # Converte para string para comparação
+                usuario_str = str(usuario).strip()
+                # Remove valores NaN e converte para string
+                self.dados['usuario'] = self.dados['usuario'].fillna('').astype(str)
+                motorista = self.dados[self.dados['usuario'].str.strip() == usuario_str]
+                if not motorista.empty:
+                    # Retorna um dicionário com os campos solicitados
+                    return {
+                        'nome': motorista.iloc[0]['nome'],
+                        'usuario': motorista.iloc[0]['usuario'],
+                        'empresa': motorista.iloc[0]['empresa'],
+                        'filial': motorista.iloc[0]['filial'],
+                        'status': motorista.iloc[0]['status']
+                    }
+            return None
+        except Exception as e:
+            st.error(f"Erro ao obter dados do motorista por usuário: {e}")
+            return None
+
     def obter_nome_por_usuario(self, usuario):
         """Obtém o nome do motorista baseado no usuário"""
         try:
@@ -1093,41 +1116,55 @@ elif pagina == "🏢 Cadastrar Cliente":
                 cliente = st.text_input("Nome do Cliente*")
                 # Dropdown com os usuários dos motoristas
                 usuario_selecionado = st.selectbox("Usuário do Motorista*", [""] + usuarios_motoristas)
-                # Mostra o nome do motorista associado ao usuário selecionado
-                if usuario_selecionado:
-                    try:
-                        nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                        if nome_motorista:
-                            st.info(f"**Motorista associado:** {nome_motorista}")
-                        else:
-                            st.warning("Usuário não encontrado na tabela de motoristas")
-                    except Exception as e:
-                        st.error(f"Erro ao buscar motorista: {e}")
+	                # Mostra o nome do motorista associado ao usuário selecionado
+	                if usuario_selecionado:
+	                    try:
+	                        dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
+	                        if dados_motorista_associado:
+	                            st.info(f"**Motorista associado:** {dados_motorista_associado['nome']}")
+	                        else:
+	                            st.warning("Usuário não encontrado na tabela de motoristas")
+	                    except Exception as e:
+	                        st.error(f"Erro ao buscar motorista: {e}")
             
-            with col2:
-                empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"])
-                filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"])
-                status = st.selectbox("Status*", ["ATIVO", "INATIVO"])
+	            with col2:
+	                # Campos 'empresa', 'filial', 'status' são apenas para visualização e serão preenchidos
+	                # automaticamente com base no motorista selecionado.
+	                empresa_auto = ""
+	                filial_auto = ""
+	                status_auto = ""
+	                
+	                # Se um usuário foi selecionado, busca os dados para exibição
+	                if usuario_selecionado:
+	                    dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
+	                    if dados_motorista_associado:
+	                        empresa_auto = dados_motorista_associado['empresa']
+	                        filial_auto = dados_motorista_associado['filial']
+	                        status_auto = dados_motorista_associado['status']
+
+	                st.text_input("Empresa (Automático)", value=empresa_auto, disabled=True)
+	                st.text_input("Filial (Automático)", value=filial_auto, disabled=True)
+	                st.text_input("Status (Automático)", value=status_auto, disabled=True)
             
             submitted = st.form_submit_button("💾 Cadastrar Cliente")
             
-            if submitted:
-                if cliente and usuario_selecionado and empresa:
-                    # Obtém o nome do motorista automaticamente
-                    try:
-                        nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                    except Exception as e:
-                        st.error(f"Erro ao obter nome do motorista: {e}")
-                        nome_motorista = ""
-                    
-                    dados_cliente = {
-                        'cliente': cliente,
-                        'nome': nome_motorista,
-                        'usuario': usuario_selecionado,
-                        'empresa': empresa,
-                        'filial': filial,
-                        'status': status
-                    }
+	            if submitted:
+	                if cliente and usuario_selecionado:
+	                    # Obtém todos os dados do motorista automaticamente para preencher os campos
+	                    dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
+	                    
+	                    if dados_motorista_associado:
+	                        dados_cliente = {
+	                            'cliente': cliente,
+	                            'nome': dados_motorista_associado['nome'],
+	                            'usuario': dados_motorista_associado['usuario'],
+	                            'empresa': dados_motorista_associado['empresa'],
+	                            'filial': dados_motorista_associado['filial'],
+	                            'status': dados_motorista_associado['status']
+	                        }
+	                    else:
+	                        st.error("❌ Não foi possível obter os dados do motorista. Cadastro cancelado.")
+	                        return # Interrompe o processamento do formulário
                     
                     if gerenciador.adicionar_cliente(dados_cliente):
                         st.success("✅ Cliente cadastrado com sucesso!")
@@ -1135,7 +1172,7 @@ elif pagina == "🏢 Cadastrar Cliente":
                     else:
                         st.error("❌ Erro ao cadastrar cliente")
                 else:
-                    st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Usuário do Motorista, Empresa)")
+	                    st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Usuário do Motorista)")
     else:
         st.warning("⚠️ Não há motoristas cadastrados. É necessário cadastrar motoristas antes de associar clientes.")
         st.info("Vá para a página '👥 Cadastrar Motorista' para adicionar motoristas primeiro.")
@@ -1177,44 +1214,56 @@ elif pagina == "✏️ Editar Cliente":
                     indice_atual = opcoes_usuarios.index(usuario_atual) if usuario_atual in opcoes_usuarios else 0
                     usuario_selecionado = st.selectbox("Usuário do Motorista*", opcoes_usuarios, index=indice_atual)
                     
-                    # Mostra o nome do motorista associado ao usuário selecionado
-                    if usuario_selecionado:
-                        try:
-                            nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                            if nome_motorista:
-                                st.info(f"**Motorista associado:** {nome_motorista}")
-                            else:
-                                st.warning("Usuário não encontrado na tabela de motoristas")
-                        except Exception as e:
-                            st.error(f"Erro ao buscar motorista: {e}")
+	                    # Mostra o nome do motorista associado ao usuário selecionado
+	                    if usuario_selecionado:
+	                        try:
+	                            dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
+	                            if dados_motorista_associado:
+	                                st.info(f"**Motorista associado:** {dados_motorista_associado['nome']}")
+	                            else:
+	                                st.warning("Usuário não encontrado na tabela de motoristas")
+	                        except Exception as e:
+	                            st.error(f"Erro ao buscar motorista: {e}")
                 
-                with col2:
-                    empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"],
-                                         index=["EXPRESSO", "LOGIKA"].index(cliente_data.get('empresa', 'EXPRESSO')))
-                    filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"],
-                                        index=["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"].index(cliente_data.get('filial', 'SPO')))
-                    status = st.selectbox("Status*", ["ATIVO", "INATIVO"],
-                                        index=["ATIVO", "INATIVO"].index(cliente_data.get('status', 'ATIVO')))
+	                with col2:
+	                    # Campos 'empresa', 'filial', 'status' são apenas para visualização e serão preenchidos
+	                    # automaticamente com base no motorista selecionado.
+	                    
+	                    # Se o usuário selecionado no formulário for diferente do atual, busca os dados do novo usuário
+	                    dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
+	                    
+	                    empresa_auto = cliente_data.get('empresa', '')
+	                    filial_auto = cliente_data.get('filial', '')
+	                    status_auto = cliente_data.get('status', '')
+	                    
+	                    if dados_motorista_associado:
+	                        empresa_auto = dados_motorista_associado['empresa']
+	                        filial_auto = dados_motorista_associado['filial']
+	                        status_auto = dados_motorista_associado['status']
+	                        
+	                    st.text_input("Empresa (Automático)", value=empresa_auto, disabled=True)
+	                    st.text_input("Filial (Automático)", value=filial_auto, disabled=True)
+	                    st.text_input("Status (Automático)", value=status_auto, disabled=True)
                 
                 submitted = st.form_submit_button("💾 Atualizar Cliente")
                 
-                if submitted:
-                    if cliente and usuario_selecionado and empresa:
-                        # Obtém o nome do motorista automaticamente
-                        try:
-                            nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                        except Exception as e:
-                            st.error(f"Erro ao obter nome do motorista: {e}")
-                            nome_motorista = ""
-                        
-                        dados_atualizados = {
-                            'cliente': cliente,
-                            'nome': nome_motorista,
-                            'usuario': usuario_selecionado,
-                            'empresa': empresa,
-                            'filial': filial,
-                            'status': status
-                        }
+	                if submitted:
+	                    if cliente and usuario_selecionado:
+	                        # Obtém todos os dados do motorista automaticamente para preencher os campos
+	                        dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
+	                        
+	                        if dados_motorista_associado:
+	                            dados_atualizados = {
+	                                'cliente': cliente,
+	                                'nome': dados_motorista_associado['nome'],
+	                                'usuario': dados_motorista_associado['usuario'],
+	                                'empresa': dados_motorista_associado['empresa'],
+	                                'filial': dados_motorista_associado['filial'],
+	                                'status': dados_motorista_associado['status']
+	                            }
+	                        else:
+	                            st.error("❌ Não foi possível obter os dados do motorista. Atualização cancelada.")
+	                            return # Interrompe o processamento do formulário
                         
                         if gerenciador.atualizar_cliente(index, dados_atualizados):
                             st.success("✅ Cliente atualizado com sucesso!")
@@ -1222,7 +1271,7 @@ elif pagina == "✏️ Editar Cliente":
                         else:
                             st.error("❌ Erro ao atualizar cliente")
                     else:
-                        st.warning("⚠️ Preencha os campos obrigatórios")
+	                    st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Usuário do Motorista)")
     else:
         st.warning("⚠️ Não há motoristas ou clientes cadastrados.")
 
