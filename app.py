@@ -149,7 +149,7 @@ class GerenciadorMotoristas:
             return False
     
     def importar_excel(self, arquivo):
-        """Importa dados de arquivo Excel mantendo estrutura"""
+        """Importa dados de arquivo Excel mantendo estrutura - CORRIGIDO"""
         try:
             # Lê o arquivo Excel
             dados_importados = pd.read_excel(arquivo)
@@ -171,13 +171,13 @@ class GerenciadorMotoristas:
             dados_importados = dados_importados[ESTRUTURA_COLUNAS]
             
             # Remove duplicatas baseado no nome e usuário
-            dados_importados = dados_importados.drop_duplicates(subset=['nome', 'usuario'], keep='last')
+            dados_importados = dados_importados.drop_duplicates(subset=['nome', 'usuario'])
             
             # Se já existem dados, faz merge
             if self.dados is not None and not self.dados.empty:
                 # Remove registros existentes com mesmo nome e usuário
-                mask = ~self.dados[['nome', 'usuario']].apply(tuple, 1).isin(
-                    dados_importados[['nome', 'usuario']].apply(tuple, 1)
+                mask = ~self.dados[['nome', 'usuario']].apply(tuple, axis=1).isin(
+                    dados_importados[['nome', 'usuario']].apply(tuple, axis=1)
                 )
                 self.dados = self.dados[mask]
                 
@@ -373,16 +373,63 @@ elif pagina == "👥 Cadastrar Motorista":
             else:
                 st.warning("⚠️ Preencha os campos obrigatórios (Nome, Usuário, Empresa)")
 
-# Página: Importar Excel
+# Página: Importar Excel - CORRIGIDA
 elif pagina == "📤 Importar Excel":
     st.title("📤 Importar Dados via Excel")
-    st.info("Funcionalidade de importação Excel")
+    
+    st.markdown("""
+    ### 📋 Instruções para Importação
+    
+    1. **Preparar o arquivo Excel** com as colunas conforme modelo
+    2. **Colunas obrigatórias**: `nome`, `usuario`, `empresa`
+    3. **Formato suportado**: .xlsx ou .xls
+    4. **Dados duplicados** serão atualizados (baseado em nome + usuário)
+    """)
     
     # Upload do arquivo
-    arquivo = st.file_uploader("Selecione o arquivo Excel", type=['xlsx', 'xls'])
-    if arquivo:
-        st.success("✅ Arquivo carregado com sucesso!")
-        st.write("Pronto para importação")
+    st.subheader("📤 Upload do Arquivo")
+    
+    arquivo = st.file_uploader(
+        "Selecione o arquivo Excel para importar",
+        type=['xlsx', 'xls'],
+        help="Arquivo Excel com dados dos motoristas"
+    )
+    
+    if arquivo is not None:
+        try:
+            # Pré-visualização dos dados
+            st.subheader("👁️ Pré-visualização dos Dados")
+            dados_preview = pd.read_excel(arquivo)
+            st.dataframe(dados_preview.head(5), use_container_width=True)
+            
+            st.info(f"📊 Arquivo contém {len(dados_preview)} registros")
+            
+            # Mostra colunas encontradas
+            colunas_encontradas = list(dados_preview.columns)
+            st.write(f"**Colunas detectadas:** {', '.join(colunas_encontradas)}")
+            
+            # Verifica colunas obrigatórias
+            colunas_necessarias = ['nome', 'usuario', 'empresa']
+            colunas_faltantes = [col for col in colunas_necessarias if col not in dados_preview.columns]
+            
+            if colunas_faltantes:
+                st.error(f"❌ Colunas obrigatórias faltantes: {', '.join(colunas_faltantes)}")
+            else:
+                st.success("✅ Todas as colunas obrigatórias presentes")
+            
+            # Botão de importação
+            if st.button("🚀 Iniciar Importação", type="primary"):
+                with st.spinner("Importando dados..."):
+                    success = gerenciador.importar_excel(arquivo)
+                    
+                    if success:
+                        st.success("✅ Importação concluída com sucesso!")
+                        st.balloons()
+                    else:
+                        st.error("❌ Erro na importação. Verifique o formato do arquivo.")
+        
+        except Exception as e:
+            st.error(f"❌ Erro ao processar arquivo: {e}")
 
 # Página: Editar Motorista
 elif pagina == "✏️ Editar Motorista":
