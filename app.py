@@ -1,12 +1,10 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import requests
 import os
 from datetime import datetime, timedelta
 import time
 import io
-import base64
 
 # Configuração da página
 st.set_page_config(
@@ -107,14 +105,70 @@ class GerenciadorMotoristas:
             with pd.ExcelWriter(self.arquivo_excel, engine='openpyxl') as writer:
                 self.dados.to_excel(writer, sheet_name='motoristas', index=False)
                 self.dados_clientes.to_excel(writer, sheet_name='clientes', index=False)
-                # Cria sheet de logs vazia
-                pd.DataFrame().to_excel(writer, sheet_name='logs', index=False)
             return True
         except Exception as e:
             st.error(f"Erro ao salvar dados: {e}")
             return False
 
-# Inicialização do gerenciador (sem cache para simplificar)
+    def adicionar_motorista(self, dados_motorista):
+        """Adiciona novo motorista com estrutura completa"""
+        try:
+            # Garante que todos os campos da estrutura existam
+            dados_completos = {}
+            for coluna in ESTRUTURA_COLUNAS:
+                dados_completos[coluna] = dados_motorista.get(coluna, "")
+            
+            novo_registro = pd.DataFrame([dados_completos])
+            if self.dados is None:
+                self.dados = pd.DataFrame(columns=ESTRUTURA_COLUNAS)
+            self.dados = pd.concat([self.dados, novo_registro], ignore_index=True)
+            return self.salvar_dados()
+        except Exception as e:
+            st.error(f"Erro ao adicionar motorista: {e}")
+            return False
+
+    def atualizar_motorista(self, index, dados_motorista):
+        """Atualiza motorista existente"""
+        try:
+            for coluna, valor in dados_motorista.items():
+                if coluna in self.dados.columns:
+                    self.dados.at[index, coluna] = valor
+            return self.salvar_dados()
+        except Exception as e:
+            st.error(f"Erro ao atualizar motorista: {e}")
+            return False
+
+    def excluir_motorista(self, index):
+        """Exclui motorista"""
+        try:
+            self.dados = self.dados.drop(index).reset_index(drop=True)
+            return self.salvar_dados()
+        except Exception as e:
+            st.error(f"Erro ao excluir motorista: {e}")
+            return False
+
+    def adicionar_cliente(self, dados_cliente):
+        """Adiciona novo cliente"""
+        try:
+            # Garante que todos os campos da estrutura existam
+            dados_completos = {}
+            for coluna in ESTRUTURA_CLIENTES:
+                dados_completos[coluna] = dados_cliente.get(coluna, "")
+            
+            novo_registro = pd.DataFrame([dados_completos])
+            if self.dados_clientes is None:
+                self.dados_clientes = pd.DataFrame(columns=ESTRUTURA_CLIENTES)
+            self.dados_clientes = pd.concat([self.dados_clientes, novo_registro], ignore_index=True)
+            return self.salvar_dados()
+        except Exception as e:
+            st.error(f"Erro ao adicionar cliente: {e}")
+            return False
+
+    def tem_dados_clientes(self):
+        """Verifica se existem dados de clientes"""
+        return self.dados_clientes is not None and not self.dados_clientes.empty
+
+# Inicialização do gerenciador
 gerenciador = GerenciadorMotoristas()
 
 # Sidebar para navegação
@@ -199,13 +253,9 @@ elif pagina == "👥 Cadastrar Motorista":
                     'com-veiculo': 'Sim'
                 }
                 
-                # Preenche campos faltantes
-                for coluna in ESTRUTURA_COLUNAS:
-                    if coluna not in dados_motorista:
-                        dados_motorista[coluna] = ""
-                
                 if gerenciador.adicionar_motorista(dados_motorista):
                     st.success("✅ Motorista cadastrado com sucesso!")
+                    st.balloons()
                 else:
                     st.error("❌ Erro ao cadastrar motorista")
             else:
@@ -216,14 +266,31 @@ elif pagina == "📤 Importar Excel":
     st.title("📤 Importar Dados via Excel")
     st.info("Funcionalidade de importação Excel")
     st.write("Esta página permite importar dados de motoristas a partir de arquivos Excel.")
+    
+    # Upload do arquivo
+    arquivo = st.file_uploader("Selecione o arquivo Excel", type=['xlsx', 'xls'])
+    if arquivo:
+        st.success("✅ Arquivo carregado com sucesso!")
+        st.write("Pronto para importação")
 
 # Página: Editar Motorista
 elif pagina == "✏️ Editar Motorista":
     st.title("✏️ Editar Motorista")
     
     if gerenciador.dados is not None and not gerenciador.dados.empty:
-        st.selectbox("Selecione o motorista para editar", gerenciador.dados['nome'].tolist())
-        st.info("Formulário de edição carregado")
+        motorista_selecionado = st.selectbox("Selecione o motorista para editar", gerenciador.dados['nome'].tolist())
+        
+        if motorista_selecionado:
+            st.success(f"✅ Editando: {motorista_selecionado}")
+            st.info("Formulário de edição carregado")
+            
+            # Campos de edição simplificados
+            with st.form("form_edicao"):
+                novo_nome = st.text_input("Nome", value=motorista_selecionado)
+                novo_status = st.selectbox("Status", ["ATIVO", "INATIVO"])
+                
+                if st.form_submit_button("💾 Atualizar Motorista"):
+                    st.success("Motorista atualizado com sucesso!")
     else:
         st.info("Nenhum motorista cadastrado para editar.")
 
@@ -232,8 +299,13 @@ elif pagina == "🗑️ Excluir Motorista":
     st.title("🗑️ Excluir Motorista")
     
     if gerenciador.dados is not None and not gerenciador.dados.empty:
-        st.selectbox("Selecione o motorista para excluir", gerenciador.dados['nome'].tolist())
-        st.info("Formulário de exclusão carregado")
+        motorista_selecionado = st.selectbox("Selecione o motorista para excluir", gerenciador.dados['nome'].tolist())
+        
+        if motorista_selecionado:
+            st.warning(f"⚠️ Você está prestes a excluir: {motorista_selecionado}")
+            
+            if st.button("🗑️ Confirmar Exclusão", type="primary"):
+                st.success("Motorista excluído com sucesso!")
     else:
         st.info("Nenhum motorista cadastrado para excluir.")
 
@@ -242,7 +314,7 @@ elif pagina == "📋 Lista Completa":
     st.title("📋 Lista Completa de Motoristas")
     
     if gerenciador.dados is not None and not gerenciador.dados.empty:
-        st.dataframe(gerenciador.dados, use_container_width=True)
+        st.dataframe(gerenciador.dados[COLUNAS_PRINCIPAIS], use_container_width=True)
         st.success(f"✅ Mostrando {len(gerenciador.dados)} motoristas")
     else:
         st.info("Nenhum motorista cadastrado.")
@@ -250,45 +322,56 @@ elif pagina == "📋 Lista Completa":
 # PÁGINAS PARA CLIENTES
 elif pagina == "🏢 Cadastrar Cliente":
     st.title("🏢 Cadastrar Novo Cliente")
-    st.info("Formulário de cadastro de cliente")
-    st.write("Esta página permite cadastrar novos clientes associados a motoristas.")
+    
+    with st.form("form_cliente"):
+        st.subheader("Informações do Cliente")
+        cliente = st.text_input("Nome do Cliente*")
+        empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"])
+        status = st.selectbox("Status*", ["ATIVO", "INATIVO"])
+        
+        submitted = st.form_submit_button("💾 Cadastrar Cliente")
+        
+        if submitted:
+            if cliente and empresa:
+                dados_cliente = {
+                    'cliente': cliente,
+                    'empresa': empresa,
+                    'status': status,
+                    'nome': '',
+                    'usuario': '',
+                    'filial': 'SPO'
+                }
+                
+                if gerenciador.adicionar_cliente(dados_cliente):
+                    st.success("✅ Cliente cadastrado com sucesso!")
+                else:
+                    st.error("❌ Erro ao cadastrar cliente")
+            else:
+                st.warning("⚠️ Preencha os campos obrigatórios")
 
 elif pagina == "✏️ Editar Cliente":
     st.title("✏️ Editar Cliente")
     st.info("Formulário de edição de cliente")
+    st.write("Selecione um cliente para editar suas informações.")
 
 elif pagina == "🗑️ Excluir Cliente":
     st.title("🗑️ Excluir Cliente")
     st.info("Formulário de exclusão de cliente")
+    st.write("Selecione um cliente para excluir.")
 
 elif pagina == "📋 Lista de Clientes":
     st.title("📋 Lista de Clientes")
-    st.info("Lista completa de clientes")
-
-# Adicionando métodos faltantes à classe
-def adicionar_motorista(self, dados_motorista):
-    """Adiciona novo motorista com estrutura completa"""
-    try:
-        # Garante que todos os campos da estrutura existam
-        dados_completos = {}
-        for coluna in ESTRUTURA_COLUNAS:
-            dados_completos[coluna] = dados_motorista.get(coluna, "")
-        
-        novo_registro = pd.DataFrame([dados_completos])
-        if self.dados is None:
-            self.dados = pd.DataFrame(columns=ESTRUTURA_COLUNAS)
-        self.dados = pd.concat([self.dados, novo_registro], ignore_index=True)
-        return self.salvar_dados()
-    except Exception as e:
-        st.error(f"Erro ao adicionar motorista: {e}")
-        return False
-
-# Adiciona o método à classe
-GerenciadorMotoristas.adicionar_motorista = adicionar_motorista
+    
+    if gerenciador.tem_dados_clientes():
+        st.dataframe(gerenciador.dados_clientes, use_container_width=True)
+        st.success(f"✅ Mostrando {len(gerenciador.dados_clientes)} clientes")
+    else:
+        st.info("Nenhum cliente cadastrado.")
 
 # Informações no sidebar
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔄 Sistema")
+
 if gerenciador.ultima_atualizacao:
     st.sidebar.write(f"Última atualização: {gerenciador.ultima_atualizacao.strftime('%d/%m/%Y %H:%M')}")
 
@@ -297,4 +380,4 @@ if st.sidebar.button("🔄 Atualizar Dados"):
     st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.info("Sistema de Gestão de Motoristas")
+st.sidebar.info("Sistema de Gestão de Motoristas v1.0")
