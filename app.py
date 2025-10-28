@@ -1,3 +1,4 @@
+'''
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -422,81 +423,42 @@ elif pagina == "👥 Cadastrar Motorista":
             com_check = st.selectbox("Com Check", ["", "Sim", "Não"])
             dirigindo = st.selectbox("Dirigindo", ["", "Sim", "Não"])
             parado_ate1h = st.selectbox("Parado até 1h", ["", "Sim", "Não"])
-            parado1ate2h = st.selectbox("Parado 1h a 2h", ["", "Sim", "Não"])
+            parado1ate2h = st.selectbox("Parado de 1 a 2h", ["", "Sim", "Não"])
+            parado_acima2h = st.selectbox("Parado acima de 2h", ["", "Sim", "Não"])
         
         with col6:
-            parado_acima2h = st.selectbox("Parado acima 2h", ["", "Sim", "Não"])
-            jornada_acm80 = st.selectbox("Jornada acima 80%", ["", "Sim", "Não"])
+            jornada_acm80 = st.selectbox("Jornada Acum. > 80%", ["", "Sim", "Não"])
             jornada_exced = st.selectbox("Jornada Excedida", ["", "Sim", "Não"])
+            sem_folga_acm7d = st.selectbox("Sem folga > 7 dias", ["", "Sim", "Não"])
+            sem_folga_acm12d = st.selectbox("Sem folga > 12 dias", ["", "Sim", "Não"])
         
-        st.subheader("Jornada e Documentação")
+        st.subheader("Informações Adicionais")
         col7, col8 = st.columns(2)
         
         with col7:
-            sem_folga_acm7d = st.selectbox("Sem folga a partir 8d", ["", "Sim", "Não"])
-            sem_folga_acm12d = st.selectbox("Sem folga a partir de 12d", ["", "Sim", "Não"])
+            localiz_atual = st.text_input("Última localiz pelo veículo")
             doc_vencendo = st.selectbox("Doc Vencendo", ["", "Sim", "Não"])
             doc_vencido = st.selectbox("Doc Vencido", ["", "Sim", "Não"])
         
         with col8:
-            localiz_atual = st.text_input("Última localiz pelo veículo")
-            associacao_clientes = st.selectbox("Associação a Clientes", ["", "Sim", "Não"])
+            associacao_clientes = st.selectbox("Associado a Clientes", ["", "Sim", "Não"])
             interj_menor8 = st.selectbox("Interjornada < 8h", ["", "Sim", "Não"])
             interj_maior8 = st.selectbox("Interjornada > 8h", ["", "Sim", "Não"])
-        
+
         submitted = st.form_submit_button("💾 Cadastrar Motorista")
         
         if submitted:
             if nome and usuario and empresa:
                 dados_motorista = {
-                    # Informações básicas
-                    'nome': nome,
-                    'usuario': usuario,
-                    'grupo': grupo,
-                    'empresa': empresa,
-                    'filial': filial,
-                    'status': status,
-                    'categoria': categoria,
-                    'placa1': placa1,
-                    'placa2': placa2,
-                    'placa3': placa3,
-                    
-                    # Status do motorista
-                    'disponibilidade': disponibilidade,
-                    'ferias': ferias,
-                    'licenca': licenca,
-                    'folga': folga,
-                    'sobreaviso': sobreaviso,
-                    'atestado': atestado,
-                    
-                    # Status operacional
-                    'com-atend': com_atend,
-                    'com-veiculo': com_veiculo,
-                    'com-check': com_check,
-                    'dirigindo': dirigindo,
-                    'parado-ate1h': parado_ate1h,
-                    'parado1ate2h': parado1ate2h,
-                    'parado-acima2h': parado_acima2h,
-                    
-                    # Jornada
-                    'jornada-acm80': jornada_acm80,
-                    'jornada-exced': jornada_exced,
-                    'sem-folga-acm7d': sem_folga_acm7d,
-                    'sem-folga-acm12d': sem_folga_acm12d,
-                    
-                    # Documentação
-                    'doc-vencendo': doc_vencendo,
-                    'doc-vencido': doc_vencido,
-                    
-                    # Localização e associação
-                    'localiz-atual': localiz_atual,
-                    'associacao-clientes': associacao_clientes,
-                    
-                    # Interjornada
-                    'interj-menor8': interj_menor8,
-                    'interj-maior8': interj_maior8
+                    'nome': nome, 'usuario': usuario, 'grupo': grupo, 'empresa': empresa, 'filial': filial, 'status': status, 
+                    'disponibilidade': disponibilidade, 'ferias': ferias, 'licenca': licenca, 'folga': folga, 'sobreaviso': sobreaviso, 'atestado': atestado,
+                    'com-atend': com_atend, 'com-veiculo': com_veiculo, 'com-check': com_check, 'dirigindo': dirigindo, 
+                    'parado-ate1h': parado_ate1h, 'parado1ate2h': parado1ate2h, 'parado-acima2h': parado_acima2h, 
+                    'jornada-acm80': jornada_acm80, 'jornada-exced': jornada_exced, 'sem-folga-acm7d': sem_folga_acm7d, 'sem-folga-acm12d': sem_folga_acm12d,
+                    'categoria': categoria, 'doc-vencendo': doc_vencendo, 'doc-vencido': doc_vencido, 'localiz-atual': localiz_atual, 
+                    'associacao-clientes': associacao_clientes, 'interj-menor8': interj_menor8, 'interj-maior8': interj_maior8,
+                    'placa1': placa1, 'placa2': placa2, 'placa3': placa3
                 }
-                
                 if gerenciador.adicionar_motorista(dados_motorista):
                     st.success("✅ Motorista cadastrado com sucesso!")
                     st.balloons()
@@ -516,7 +478,8 @@ elif pagina == "📤 Importar Excel":
     2. **Colunas obrigatórias**: `nome`, `usuario`, `empresa`
     3. **Formato suportado**: .xlsx ou .xls
     4. **Dados duplicados** serão atualizados (baseado em nome + usuário)
-    """)
+    """""
+    )
     
     # Download do template
     st.subheader("📥 Download do Template")
@@ -709,64 +672,70 @@ elif pagina == "✏️ Editar Motorista":
                     com_veiculo = st.selectbox("Com Veículo", ["", "Sim", "Não"],
                                              index=["", "Sim", "Não"].index(motorista_data.get('com-veiculo', '')))
                 
-                st.subheader("Informações Adicionais")
+                st.subheader("Status Operacional")
                 col5, col6 = st.columns(2)
                 
                 with col5:
+                    com_check = st.selectbox("Com Check", ["", "Sim", "Não"],
+                                           index=["", "Sim", "Não"].index(motorista_data.get('com-check', '')))
+                    dirigindo = st.selectbox("Dirigindo", ["", "Sim", "Não"],
+                                           index=["", "Sim", "Não"].index(motorista_data.get('dirigindo', '')))
+                    parado_ate1h = st.selectbox("Parado até 1h", ["", "Sim", "Não"],
+                                              index=["", "Sim", "Não"].index(motorista_data.get('parado-ate1h', '')))
+                    parado1ate2h = st.selectbox("Parado de 1 a 2h", ["", "Sim", "Não"],
+                                              index=["", "Sim", "Não"].index(motorista_data.get('parado1ate2h', '')))
+                    parado_acima2h = st.selectbox("Parado acima de 2h", ["", "Sim", "Não"],
+                                                index=["", "Sim", "Não"].index(motorista_data.get('parado-acima2h', '')))
+                
+                with col6:
+                    jornada_acm80 = st.selectbox("Jornada Acum. > 80%", ["", "Sim", "Não"],
+                                               index=["", "Sim", "Não"].index(motorista_data.get('jornada-acm80', '')))
+                    jornada_exced = st.selectbox("Jornada Excedida", ["", "Sim", "Não"],
+                                               index=["", "Sim", "Não"].index(motorista_data.get('jornada-exced', '')))
+                    sem_folga_acm7d = st.selectbox("Sem folga > 7 dias", ["", "Sim", "Não"],
+                                                 index=["", "Sim", "Não"].index(motorista_data.get('sem-folga-acm7d', '')))
+                    sem_folga_acm12d = st.selectbox("Sem folga > 12 dias", ["", "Sim", "Não"],
+                                                  index=["", "Sim", "Não"].index(motorista_data.get('sem-folga-acm12d', '')))
+
+                st.subheader("Informações Adicionais")
+                col7, col8 = st.columns(2)
+
+                with col7:
                     localiz_atual = st.text_input("Última localiz pelo veículo", value=motorista_data.get('localiz-atual', ''))
                     doc_vencendo = st.selectbox("Doc Vencendo", ["", "Sim", "Não"],
                                               index=["", "Sim", "Não"].index(motorista_data.get('doc-vencendo', '')))
                     doc_vencido = st.selectbox("Doc Vencido", ["", "Sim", "Não"],
                                              index=["", "Sim", "Não"].index(motorista_data.get('doc-vencido', '')))
-                    associacao_clientes = st.selectbox("Associação a Clientes", ["", "Sim", "Não"],
+
+                with col8:
+                    associacao_clientes = st.selectbox("Associado a Clientes", ["", "Sim", "Não"],
                                                      index=["", "Sim", "Não"].index(motorista_data.get('associacao-clientes', '')))
-                
-                with col6:
                     interj_menor8 = st.selectbox("Interjornada < 8h", ["", "Sim", "Não"],
                                                index=["", "Sim", "Não"].index(motorista_data.get('interj-menor8', '')))
                     interj_maior8 = st.selectbox("Interjornada > 8h", ["", "Sim", "Não"],
                                                index=["", "Sim", "Não"].index(motorista_data.get('interj-maior8', '')))
-                
-                submitted = st.form_submit_button("💾 Atualizar Motorista")
+
+                submitted = st.form_submit_button("💾 Salvar Alterações")
                 
                 if submitted:
-                    if nome and usuario and empresa:
-                        dados_atualizados = {
-                            'nome': nome,
-                            'usuario': usuario,
-                            'grupo': grupo,
-                            'empresa': empresa,
-                            'filial': filial,
-                            'status': status,
-                            'categoria': categoria,
-                            'placa1': placa1,
-                            'placa2': placa2,
-                            'placa3': placa3,
-                            'disponibilidade': disponibilidade,
-                            'ferias': ferias,
-                            'licenca': licenca,
-                            'folga': folga,
-                            'sobreaviso': sobreaviso,
-                            'atestado': atestado,
-                            'com-atend': com_atend,
-                            'com-veiculo': com_veiculo,
-                            'localiz-atual': localiz_atual,
-                            'doc-vencendo': doc_vencendo,
-                            'doc-vencido': doc_vencido,
-                            'associacao-clientes': associacao_clientes,
-                            'interj-menor8': interj_menor8,
-                            'interj-maior8': interj_maior8
-                        }
-                        
-                        if gerenciador.atualizar_motorista(index, dados_atualizados):
-                            st.success("✅ Motorista atualizado com sucesso!")
-                            st.balloons()
-                        else:
-                            st.error("❌ Erro ao atualizar motorista")
+                    dados_atualizados = {
+                        'nome': nome, 'usuario': usuario, 'grupo': grupo, 'empresa': empresa, 'filial': filial, 'status': status, 
+                        'disponibilidade': disponibilidade, 'ferias': ferias, 'licenca': licenca, 'folga': folga, 'sobreaviso': sobreaviso, 'atestado': atestado,
+                        'com-atend': com_atend, 'com-veiculo': com_veiculo, 'com-check': com_check, 'dirigindo': dirigindo, 
+                        'parado-ate1h': parado_ate1h, 'parado1ate2h': parado1ate2h, 'parado-acima2h': parado_acima2h, 
+                        'jornada-acm80': jornada_acm80, 'jornada-exced': jornada_exced, 'sem-folga-acm7d': sem_folga_acm7d, 'sem-folga-acm12d': sem_folga_acm12d,
+                        'categoria': categoria, 'doc-vencendo': doc_vencendo, 'doc-vencido': doc_vencido, 'localiz-atual': localiz_atual, 
+                        'associacao-clientes': associacao_clientes, 'interj-menor8': interj_menor8, 'interj-maior8': interj_maior8,
+                        'placa1': placa1, 'placa2': placa2, 'placa3': placa3
+                    }
+                    
+                    if gerenciador.atualizar_motorista(index, dados_atualizados):
+                        st.success("✅ Motorista atualizado com sucesso!")
+                        st.rerun()
                     else:
-                        st.warning("⚠️ Preencha os campos obrigatórios (Nome, Usuário, Empresa)")
+                        st.error("❌ Erro ao atualizar motorista")
     else:
-        st.info("Nenhum motorista cadastrado para editar.")
+        st.warning("⚠️ Não há motoristas cadastrados.")
 
 # Página: Excluir Motorista
 elif pagina == "🗑️ Excluir Motorista":
@@ -782,37 +751,25 @@ elif pagina == "🗑️ Excluir Motorista":
             index = gerenciador.dados[gerenciador.dados['nome'] == motorista_selecionado].index[0]
             motorista_data = gerenciador.dados.iloc[index]
             
-            st.warning("⚠️ **Atenção:** Esta ação não pode ser desfeita!")
+            st.warning("⚠️ Confirma a exclusão deste motorista?")
             
-            # Mostra informações do motorista
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.write("**Nome:**", motorista_data.get('nome', ''))
-                st.write("**Usuário:**", motorista_data.get('usuario', ''))
-                st.write("**Empresa:**", motorista_data.get('empresa', ''))
-                st.write("**Status:**", motorista_data.get('status', ''))
-            
+            col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                st.write("**Filial:**", motorista_data.get('filial', ''))
-                st.write("**Categoria:**", motorista_data.get('categoria', ''))
-                st.write("**Placa Principal:**", motorista_data.get('placa1', ''))
-                st.write("**Disponibilidade:**", motorista_data.get('disponibilidade', ''))
+                st.write(f"**Nome:** {motorista_data.get('nome', '')}")
+                st.write(f"**Usuário:** {motorista_data.get('usuario', '')}")
+                st.write(f"**Empresa:** {motorista_data.get('empresa', '')}")
+                st.write(f"**Status:** {motorista_data.get('status', '')}")
             
-            # Confirmação
-            confirmacao = st.text_input("Digite 'EXCLUIR' para confirmar:")
-            
-            if st.button("🗑️ Excluir Permanentemente", type="primary"):
-                if confirmacao == "EXCLUIR":
+            col1, col2, col3 = st.columns(3)
+            with col2:
+                if st.button("🗑️ Confirmar Exclusão", type="primary"):
                     if gerenciador.excluir_motorista(index):
                         st.success("✅ Motorista excluído com sucesso!")
                         st.rerun()
                     else:
                         st.error("❌ Erro ao excluir motorista")
-                else:
-                    st.error("❌ Confirmação incorreta. Digite 'EXCLUIR' para confirmar a exclusão.")
     else:
-        st.info("Nenhum motorista cadastrado para excluir.")
+        st.info("Nenhum motorista cadastrado.")
 
 # Página: Lista Completa
 elif pagina == "📋 Lista Completa":
@@ -822,185 +779,60 @@ elif pagina == "📋 Lista Completa":
         # Filtros
         st.subheader("🔍 Filtros")
         
-        # Primeira linha de filtros
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
             valores_empresa = obter_valores_unicos('empresa', gerenciador.dados)
-            filtro_empresa = st.selectbox(
-                "Empresa",
-                ["Todas"] + valores_empresa
-            )
+            filtro_empresa = st.selectbox("Empresa", ["Todas"] + valores_empresa)
+            
+            valores_filial = obter_valores_unicos('filial', gerenciador.dados)
+            filtro_filial = st.selectbox("Filial", ["Todas"] + valores_filial)
         
         with col2:
-            valores_filial = obter_valores_unicos('filial', gerenciador.dados)
-            filtro_filial = st.selectbox(
-                "Filial",
-                ["Todas"] + valores_filial
-            )
-        
-        with col3:
             valores_categoria = obter_valores_unicos('categoria', gerenciador.dados)
-            filtro_categoria = st.selectbox(
-                "Categoria",
-                ["Todas"] + valores_categoria
-            )
-        
+            filtro_categoria = st.selectbox("Categoria", ["Todas"] + valores_categoria)
+            
+            filtro_veiculo = st.selectbox("Com Veículo", ["Todos", "Sim", "Não"])
+
+        with col3:
+            filtro_disponibilidade = st.selectbox("Disponibilidade", ["Todas", "Trabalhando", "Interjornada", "Indisponíveis"])
+            filtro_ferias = st.selectbox("Férias", ["Todos", "Sim", "Não"])
+            filtro_licenca = st.selectbox("Licença", ["Todos", "Sim", "Não"])
+            filtro_folga = st.selectbox("Folga", ["Todos", "Sim", "Não"])
+
         with col4:
-            filtro_veiculo = st.selectbox(
-                "Com Veículo",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Segunda linha de filtros
+            filtro_sobreaviso = st.selectbox("Sobreaviso", ["Todos", "Sim", "Não"])
+            filtro_atestado = st.selectbox("Atestado", ["Todos", "Sim", "Não"])
+            filtro_com_atend = st.selectbox("Com Atendimento", ["Todos", "Sim", "Não"])
+            filtro_com_check = st.selectbox("Com Check", ["Todos", "Sim", "Não"])
+
+        st.subheader("Filtros Adicionais")
         col5, col6, col7, col8 = st.columns(4)
-        
+
         with col5:
-            valores_disponibilidade = obter_valores_unicos('disponibilidade', gerenciador.dados)
-            filtro_disponibilidade = st.selectbox(
-                "Disponibilidade",
-                ["Todas"] + valores_disponibilidade
-            )
-        
+            filtro_dirigindo = st.selectbox("Dirigindo", ["Todos", "Sim", "Não"])
+            filtro_parado_ate1h = st.selectbox("Parado até 1h", ["Todos", "Sim", "Não"])
+            filtro_parado1ate2h = st.selectbox("Parado de 1 a 2h", ["Todos", "Sim", "Não"])
+            filtro_parado_acima2h = st.selectbox("Parado acima de 2h", ["Todos", "Sim", "Não"])
+
         with col6:
-            filtro_ferias = st.selectbox(
-                "Férias",
-                ["Todas", "Sim", "Não"]
-            )
-        
+            filtro_jornada_acm80 = st.selectbox("Jornada Acum. > 80%", ["Todos", "Sim", "Não"])
+            filtro_jornada_exced = st.selectbox("Jornada Excedida", ["Todos", "Sim", "Não"])
+            filtro_sem_folga_acm7d = st.selectbox("Sem folga > 7 dias", ["Todos", "Sim", "Não"])
+            filtro_sem_folga_acm12d = st.selectbox("Sem folga > 12 dias", ["Todos", "Sim", "Não"])
+
         with col7:
-            filtro_licenca = st.selectbox(
-                "Licença",
-                ["Todas", "Sim", "Não"]
-            )
-        
+            filtro_doc_vencendo = st.selectbox("Doc Vencendo", ["Todos", "Sim", "Não"])
+            filtro_doc_vencido = st.selectbox("Doc Vencido", ["Todos", "Sim", "Não"])
+            filtro_associacao_clientes = st.selectbox("Associado a Clientes", ["Todos", "Sim", "Não"])
+
         with col8:
-            filtro_folga = st.selectbox(
-                "Folga",
-                ["Todas", "Sim", "Não"]
-            )
-        
-        # Terceira linha de filtros
-        col9, col10, col11, col12 = st.columns(4)
-        
-        with col9:
-            filtro_sobreaviso = st.selectbox(
-                "Sobreaviso",
-                ["Todas", "Sim", "Não"]
-            )
-        
-        with col10:
-            filtro_atestado = st.selectbox(
-                "Atestado",
-                ["Todas", "Sim", "Não"]
-            )
-        
-        with col11:
-            filtro_com_atend = st.selectbox(
-                "Com Atendimento",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col12:
-            filtro_com_check = st.selectbox(
-                "Com Check",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Quarta linha de filtros
-        col13, col14, col15, col16 = st.columns(4)
-        
-        with col13:
-            filtro_dirigindo = st.selectbox(
-                "Dirigindo",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col14:
-            filtro_parado_ate1h = st.selectbox(
-                "Parado até 1h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col15:
-            filtro_parado1ate2h = st.selectbox(
-                "Parado 1h a 2h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col16:
-            filtro_parado_acima2h = st.selectbox(
-                "Parado acima 2h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Quinta linha de filtros
-        col17, col18, col19, col20 = st.columns(4)
-        
-        with col17:
-            filtro_jornada_acm80 = st.selectbox(
-                "Jornada acima 80%",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col18:
-            filtro_jornada_exced = st.selectbox(
-                "Jornada Excedida",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col19:
-            filtro_sem_folga_acm7d = st.selectbox(
-                "Sem folga a partir 8d",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col20:
-            filtro_sem_folga_acm12d = st.selectbox(
-                "Sem folga a partir de 12d",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Sexta linha de filtros
-        col21, col22, col23, col24 = st.columns(4)
-        
-        with col21:
-            filtro_doc_vencendo = st.selectbox(
-                "Doc Vencendo",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col22:
-            filtro_doc_vencido = st.selectbox(
-                "Doc Vencido",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col23:
-            filtro_associacao_clientes = st.selectbox(
-                "Associação a Clientes",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        with col24:
-            filtro_interj_menor8 = st.selectbox(
-                "Interjornada < 8h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Sétima linha de filtros
-        col25, col26, col27, col28 = st.columns(4)
-        
-        with col25:
-            filtro_interj_maior8 = st.selectbox(
-                "Interjornada > 8h",
-                ["Todos", "Sim", "Não"]
-            )
-        
-        # Aplicar filtros
+            filtro_interj_menor8 = st.selectbox("Interjornada < 8h", ["Todos", "Sim", "Não"])
+            filtro_interj_maior8 = st.selectbox("Interjornada > 8h", ["Todos", "Sim", "Não"])
+
+        # Aplicar todos os filtros
         dados_filtrados = gerenciador.dados.copy()
         
-        # Aplicar todos os filtros
         if filtro_empresa != "Todas":
             dados_filtrados = dados_filtrados[dados_filtrados['empresa'] == filtro_empresa]
         
@@ -1028,7 +860,7 @@ elif pagina == "📋 Lista Completa":
         if filtro_sobreaviso != "Todas":
             dados_filtrados = dados_filtrados[dados_filtrados['sobreaviso'] == filtro_sobreaviso]
         
-        if filtro_atestado != "Todas":
+        if filtro_atestado != "Todos":
             dados_filtrados = dados_filtrados[dados_filtrados['atestado'] == filtro_atestado]
         
         if filtro_com_atend != "Todos":
@@ -1115,64 +947,63 @@ elif pagina == "🏢 Cadastrar Cliente":
             with col1:
                 cliente = st.text_input("Nome do Cliente*")
                 # Dropdown com os usuários dos motoristas
-                usuario_selecionado = st.selectbox("Usuário do Motorista*", [""] + usuarios_motoristas)
-	                # Mostra o nome do motorista associado ao usuário selecionado
-	                if usuario_selecionado:
-	                    try:
-	                        dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
-	                        if dados_motorista_associado:
-	                            st.info(f"**Motorista associado:** {dados_motorista_associado['nome']}")
-	                        else:
-	                            st.warning("Usuário não encontrado na tabela de motoristas")
-	                    except Exception as e:
-	                        st.error(f"Erro ao buscar motorista: {e}")
+                usuario_selecionado = st.selectbox("Usuário do Motorista*", [''] + usuarios_motoristas)
+                # Mostra o nome do motorista associado ao usuário selecionado
+                if usuario_selecionado:
+                    try:
+                        dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
+                        if dados_motorista_associado:
+                            st.info(f"**Motorista associado:** {dados_motorista_associado['nome']}")
+                        else:
+                            st.warning("Usuário não encontrado na tabela de motoristas")
+                    except Exception as e:
+                        st.error(f"Erro ao buscar motorista: {e}")
             
-	            with col2:
-	                # Campos 'empresa', 'filial', 'status' são apenas para visualização e serão preenchidos
-	                # automaticamente com base no motorista selecionado.
-	                empresa_auto = ""
-	                filial_auto = ""
-	                status_auto = ""
-	                
-	                # Se um usuário foi selecionado, busca os dados para exibição
-	                if usuario_selecionado:
-	                    dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
-	                    if dados_motorista_associado:
-	                        empresa_auto = dados_motorista_associado['empresa']
-	                        filial_auto = dados_motorista_associado['filial']
-	                        status_auto = dados_motorista_associado['status']
+            with col2:
+                # Campos 'empresa', 'filial', 'status' são apenas para visualização e serão preenchidos
+                # automaticamente com base no motorista selecionado.
+                empresa_auto = ""
+                filial_auto = ""
+                status_auto = ""
+                
+                # Se um usuário foi selecionado, busca os dados para exibição
+                if usuario_selecionado:
+                    dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
+                    if dados_motorista_associado:
+                        empresa_auto = dados_motorista_associado['empresa']
+                        filial_auto = dados_motorista_associado['filial']
+                        status_auto = dados_motorista_associado['status']
 
-	                st.text_input("Empresa (Automático)", value=empresa_auto, disabled=True)
-	                st.text_input("Filial (Automático)", value=filial_auto, disabled=True)
-	                st.text_input("Status (Automático)", value=status_auto, disabled=True)
+                st.text_input("Empresa (Automático)", value=empresa_auto, disabled=True)
+                st.text_input("Filial (Automático)", value=filial_auto, disabled=True)
+                st.text_input("Status (Automático)", value=status_auto, disabled=True)
             
             submitted = st.form_submit_button("💾 Cadastrar Cliente")
             
-	            if submitted:
-	                if cliente and usuario_selecionado:
-	                    # Obtém todos os dados do motorista automaticamente para preencher os campos
-	                    dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
-	                    
-	                    if dados_motorista_associado:
-	                        dados_cliente = {
-	                            'cliente': cliente,
-	                            'nome': dados_motorista_associado['nome'],
-	                            'usuario': dados_motorista_associado['usuario'],
-	                            'empresa': dados_motorista_associado['empresa'],
-	                            'filial': dados_motorista_associado['filial'],
-	                            'status': dados_motorista_associado['status']
-	                        }
-	                    else:
-	                        st.error("❌ Não foi possível obter os dados do motorista. Cadastro cancelado.")
-	                        return # Interrompe o processamento do formulário
+            if submitted:
+                if cliente and usuario_selecionado:
+                    # Obtém todos os dados do motorista automaticamente para preencher os campos
+                    dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
                     
-                    if gerenciador.adicionar_cliente(dados_cliente):
-                        st.success("✅ Cliente cadastrado com sucesso!")
-                        st.balloons()
+                    if dados_motorista_associado:
+                        dados_cliente = {
+                            'cliente': cliente,
+                            'nome': dados_motorista_associado['nome'],
+                            'usuario': dados_motorista_associado['usuario'],
+                            'empresa': dados_motorista_associado['empresa'],
+                            'filial': dados_motorista_associado['filial'],
+                            'status': dados_motorista_associado['status']
+                        }
+                        
+                        if gerenciador.adicionar_cliente(dados_cliente):
+                            st.success("✅ Cliente cadastrado com sucesso!")
+                            st.balloons()
+                        else:
+                            st.error("❌ Erro ao cadastrar cliente")
                     else:
-                        st.error("❌ Erro ao cadastrar cliente")
+                        st.error("❌ Não foi possível obter os dados do motorista. Cadastro cancelado.")
                 else:
-	                    st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Usuário do Motorista)")
+                    st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Usuário do Motorista)")
     else:
         st.warning("⚠️ Não há motoristas cadastrados. É necessário cadastrar motoristas antes de associar clientes.")
         st.info("Vá para a página '👥 Cadastrar Motorista' para adicionar motoristas primeiro.")
@@ -1210,68 +1041,67 @@ elif pagina == "✏️ Editar Cliente":
                     cliente = st.text_input("Nome do Cliente*", value=cliente_data.get('cliente', ''))
                     # Encontra o índice correto para o dropdown de usuários
                     usuario_atual = cliente_data.get('usuario', '')
-                    opcoes_usuarios = [""] + usuarios_motoristas
+                    opcoes_usuarios = [''] + usuarios_motoristas
                     indice_atual = opcoes_usuarios.index(usuario_atual) if usuario_atual in opcoes_usuarios else 0
                     usuario_selecionado = st.selectbox("Usuário do Motorista*", opcoes_usuarios, index=indice_atual)
                     
-	                    # Mostra o nome do motorista associado ao usuário selecionado
-	                    if usuario_selecionado:
-	                        try:
-	                            dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
-	                            if dados_motorista_associado:
-	                                st.info(f"**Motorista associado:** {dados_motorista_associado['nome']}")
-	                            else:
-	                                st.warning("Usuário não encontrado na tabela de motoristas")
-	                        except Exception as e:
-	                            st.error(f"Erro ao buscar motorista: {e}")
+                    # Mostra o nome do motorista associado ao usuário selecionado
+                    if usuario_selecionado:
+                        try:
+                            dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
+                            if dados_motorista_associado:
+                                st.info(f"**Motorista associado:** {dados_motorista_associado['nome']}")
+                            else:
+                                st.warning("Usuário não encontrado na tabela de motoristas")
+                        except Exception as e:
+                            st.error(f"Erro ao buscar motorista: {e}")
                 
-	                with col2:
-	                    # Campos 'empresa', 'filial', 'status' são apenas para visualização e serão preenchidos
-	                    # automaticamente com base no motorista selecionado.
-	                    
-	                    # Se o usuário selecionado no formulário for diferente do atual, busca os dados do novo usuário
-	                    dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
-	                    
-	                    empresa_auto = cliente_data.get('empresa', '')
-	                    filial_auto = cliente_data.get('filial', '')
-	                    status_auto = cliente_data.get('status', '')
-	                    
-	                    if dados_motorista_associado:
-	                        empresa_auto = dados_motorista_associado['empresa']
-	                        filial_auto = dados_motorista_associado['filial']
-	                        status_auto = dados_motorista_associado['status']
-	                        
-	                    st.text_input("Empresa (Automático)", value=empresa_auto, disabled=True)
-	                    st.text_input("Filial (Automático)", value=filial_auto, disabled=True)
-	                    st.text_input("Status (Automático)", value=status_auto, disabled=True)
+                with col2:
+                    # Campos 'empresa', 'filial', 'status' são apenas para visualização e serão preenchidos
+                    # automaticamente com base no motorista selecionado.
+                    
+                    # Se o usuário selecionado no formulário for diferente do atual, busca os dados do novo usuário
+                    dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
+                    
+                    empresa_auto = cliente_data.get('empresa', '')
+                    filial_auto = cliente_data.get('filial', '')
+                    status_auto = cliente_data.get('status', '')
+                    
+                    if dados_motorista_associado:
+                        empresa_auto = dados_motorista_associado['empresa']
+                        filial_auto = dados_motorista_associado['filial']
+                        status_auto = dados_motorista_associado['status']
+                        
+                    st.text_input("Empresa (Automático)", value=empresa_auto, disabled=True)
+                    st.text_input("Filial (Automático)", value=filial_auto, disabled=True)
+                    st.text_input("Status (Automático)", value=status_auto, disabled=True)
                 
                 submitted = st.form_submit_button("💾 Atualizar Cliente")
                 
-	                if submitted:
-	                    if cliente and usuario_selecionado:
-	                        # Obtém todos os dados do motorista automaticamente para preencher os campos
-	                        dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
-	                        
-	                        if dados_motorista_associado:
-	                            dados_atualizados = {
-	                                'cliente': cliente,
-	                                'nome': dados_motorista_associado['nome'],
-	                                'usuario': dados_motorista_associado['usuario'],
-	                                'empresa': dados_motorista_associado['empresa'],
-	                                'filial': dados_motorista_associado['filial'],
-	                                'status': dados_motorista_associado['status']
-	                            }
-	                        else:
-	                            st.error("❌ Não foi possível obter os dados do motorista. Atualização cancelada.")
-	                            return # Interrompe o processamento do formulário
+                if submitted:
+                    if cliente and usuario_selecionado:
+                        # Obtém todos os dados do motorista automaticamente para preencher os campos
+                        dados_motorista_associado = gerenciador.obter_dados_motorista_por_usuario(usuario_selecionado)
                         
-                        if gerenciador.atualizar_cliente(index, dados_atualizados):
-                            st.success("✅ Cliente atualizado com sucesso!")
-                            st.rerun()
+                        if dados_motorista_associado:
+                            dados_atualizados = {
+                                'cliente': cliente,
+                                'nome': dados_motorista_associado['nome'],
+                                'usuario': dados_motorista_associado['usuario'],
+                                'empresa': dados_motorista_associado['empresa'],
+                                'filial': dados_motorista_associado['filial'],
+                                'status': dados_motorista_associado['status']
+                            }
+
+                            if gerenciador.atualizar_cliente(index, dados_atualizados):
+                                st.success("✅ Cliente atualizado com sucesso!")
+                                st.rerun()
+                            else:
+                                st.error("❌ Erro ao atualizar cliente")
                         else:
-                            st.error("❌ Erro ao atualizar cliente")
+                            st.error("❌ Não foi possível obter os dados do motorista. Atualização cancelada.")
                     else:
-	                    st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Usuário do Motorista)")
+                        st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Usuário do Motorista)")
     else:
         st.warning("⚠️ Não há motoristas ou clientes cadastrados.")
 
@@ -1330,7 +1160,7 @@ elif pagina == "📋 Lista de Clientes":
         
         with col3:
             valores_empresa = obter_valores_unicos('empresa', gerenciador.dados_clientes)
-            filtro_empresa = st.selectbox("Empresa", ["Todas"] + valores_empresa)
+            filtro_empresa = st.selectbox("Empresa", ["Todos"] + valores_empresa)
         
         with col4:
             filtro_status = st.selectbox("Status", ["Todos", "ATIVO", "INATIVO"])
@@ -1344,7 +1174,7 @@ elif pagina == "📋 Lista de Clientes":
         if filtro_motorista != "Todos":
             dados_filtrados = dados_filtrados[dados_filtrados['nome'] == filtro_motorista]
         
-        if filtro_empresa != "Todas":
+        if filtro_empresa != "Todos":
             dados_filtrados = dados_filtrados[dados_filtrados['empresa'] == filtro_empresa]
         
         if filtro_status != "Todos":
@@ -1366,7 +1196,8 @@ elif pagina == "📋 Lista de Clientes":
         st.info("Nenhum cliente cadastrado.")
 
 # Informações de atualização no sidebar
-st.sidebar.markdown("---")
+st.sidebar.markdown("---
+")
 st.sidebar.subheader("🔄 Atualização")
 if gerenciador.ultima_atualizacao:
     st.sidebar.write(f"Última atualização: {gerenciador.ultima_atualizacao.strftime('%d/%m/%Y %H:%M')}")
@@ -1376,5 +1207,7 @@ if st.sidebar.button("🔄 Atualizar Agora"):
     st.session_state.ultima_atualizacao = datetime.now()
     st.rerun()
 
-st.sidebar.markdown("---")
+st.sidebar.markdown("---
+")
 st.sidebar.info("Sistema atualizado automaticamente a cada 1 hora")
+'''
