@@ -1,4 +1,12 @@
-# Página: Editar Motorista
+# Página: Importar Excel
+elif pagina == "📤 Importar Excel":
+    st.title("📤 Importar Dados via Excel")
+    
+    # ... (todo o código existente da página Importar Excel)
+    
+    # FIM da página Importar Excel
+
+# Página: Editar Motorista - CORREÇÃO AQUI
 elif pagina == "✏️ Editar Motorista":
     st.title("✏️ Editar Motorista")
     
@@ -116,7 +124,7 @@ elif pagina == "✏️ Editar Motorista":
     else:
         st.info("Nenhum motorista cadastrado para editar.")
 
-# Página: Excluir Motorista - CORREÇÃO AQUI
+# Página: Excluir Motorista
 elif pagina == "🗑️ Excluir Motorista":
     st.title("🗑️ Excluir Motorista")
     
@@ -166,30 +174,27 @@ elif pagina == "🗑️ Excluir Motorista":
 elif pagina == "📋 Lista Completa":
     st.title("📋 Lista Completa de Motoristas")
     
-    if gerenciador.dados is not None and not gerenciador.dados.empty:
-        # ... (mantenha todo o código existente da Lista Completa)
-        pass
-    else:
-        st.info("Nenhum motorista cadastrado.")
+    # ... (mantenha todo o código da Lista Completa)
+    pass
 
 # PÁGINAS PARA CLIENTES
 elif pagina == "🏢 Cadastrar Cliente":
     st.title("🏢 Cadastrar Novo Cliente")
     
-    # ... (mantenha todo o código existente do Cadastrar Cliente)
+    # ... (mantenha todo o código do Cadastrar Cliente)
     pass
 
 # Página: Editar Cliente
 elif pagina == "✏️ Editar Cliente":
-    # ... (mantenha todo o código existente da Editar Cliente)
+    # ... (mantenha todo o código da Editar Cliente)
     pass
 
 # Página: Excluir Cliente
 elif pagina == "🗑️ Excluir Cliente":
-    # ... (mantenha todo o código existente da Excluir Cliente)
+    # ... (mantenha todo o código da Excluir Cliente)
     pass
 
 # Página: Lista de Clientes
 elif pagina == "📋 Lista de Clientes":
-    # ... (mantenha todo o código existente da Lista de Clientes)
+    # ... (mantenha todo o código da Lista de Clientes)
     pass
