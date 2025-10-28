@@ -1,4 +1,8 @@
-# PÁGINAS PARA CLIENTES
+# Página: Lista Completa
+elif pagina == "📋 Lista Completa":
+    # ... (código existente da lista completa)
+
+# PÁGINAS PARA CLIENTES - CORREÇÃO AQUI
 elif pagina == "🏢 Cadastrar Cliente":
     st.title("🏢 Cadastrar Novo Cliente")
     
@@ -92,3 +96,15 @@ elif pagina == "🏢 Cadastrar Cliente":
     else:
         st.warning("⚠️ Não há motoristas cadastrados. É necessário cadastrar motoristas antes de associar clientes.")
         st.info("Vá para a página '👥 Cadastrar Motorista' para adicionar motoristas primeiro.")
+
+# Página: Editar Cliente
+elif pagina == "✏️ Editar Cliente":
+    # ... (código existente da edição de cliente)
+
+# Página: Excluir Cliente  
+elif pagina == "🗑️ Excluir Cliente":
+    # ... (código existente da exclusão de cliente)
+
+# Página: Lista de Clientes
+elif pagina == "📋 Lista de Clientes":
+    # ... (código existente da lista de clientes)
