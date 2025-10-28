@@ -269,8 +269,14 @@ class GerenciadorMotoristas:
     def validar_usuario_motorista(self, usuario):
         """Valida se usuário existe na tabela motoristas"""
         try:
+            # CORREÇÃO: Verificação adicional para valores None ou vazios
+            if not usuario or not str(usuario).strip():
+                return False
+                
             if self.dados is not None and not self.dados.empty and 'usuario' in self.dados.columns:
-                usuarios_existentes = self.dados['usuario'].astype(str).str.strip().tolist()
+                # Garante que a coluna usuario seja string para comparação
+                self.dados['usuario'] = self.dados['usuario'].fillna('').astype(str)
+                usuarios_existentes = self.dados['usuario'].str.strip().tolist()
                 return str(usuario).strip() in usuarios_existentes
             return False
         except Exception as e:
@@ -280,6 +286,10 @@ class GerenciadorMotoristas:
     def sincronizar_dados_cliente(self, usuario):
         """Sincroniza dados do motorista para o cliente automaticamente"""
         try:
+            # CORREÇÃO: Verificação adicional antes de processar
+            if not usuario or not str(usuario).strip():
+                return {}
+                
             if self.dados is not None and not self.dados.empty:
                 # Garante que a coluna usuario seja string para comparação
                 self.dados['usuario'] = self.dados['usuario'].astype(str).str.strip()
@@ -304,6 +314,10 @@ class GerenciadorMotoristas:
     def atualizar_clientes_por_motorista(self, usuario_antigo, usuario_novo):
         """Atualiza todos os clientes quando um motorista é editado"""
         try:
+            # CORREÇÃO: Verificação adicional para valores vazios
+            if not usuario_antigo or not str(usuario_antigo).strip():
+                return True
+                
             if self.tem_dados_clientes():
                 # Encontra clientes associados ao usuário antigo
                 mask = self.dados_clientes['usuario'].astype(str).str.strip() == str(usuario_antigo).strip()
@@ -866,15 +880,44 @@ elif pagina == "📋 Lista Completa":
         # Filtros
         st.subheader("🔍 Filtros")
         
-        # Aplicar filtros e mostrar dados (código existente mantido)
-        # ... [código dos filtros mantido igual] ...
+        col1, col2, col3, col4 = st.columns(4)
         
-        st.subheader(f"📊 Resultados ({len(gerenciador.dados)} motoristas)")
-        st.dataframe(gerenciador.dados, use_container_width=True)
+        with col1:
+            valores_nome = obter_valores_unicos('nome', gerenciador.dados)
+            filtro_nome = st.selectbox("Nome", ["Todos"] + valores_nome)
+        
+        with col2:
+            valores_empresa = obter_valores_unicos('empresa', gerenciador.dados)
+            filtro_empresa = st.selectbox("Empresa", ["Todas"] + valores_empresa)
+        
+        with col3:
+            valores_filial = obter_valores_unicos('filial', gerenciador.dados)
+            filtro_filial = st.selectbox("Filial", ["Todas"] + valores_filial)
+        
+        with col4:
+            filtro_status = st.selectbox("Status", ["Todos", "ATIVO", "INATIVO"])
+        
+        # Aplicar filtros
+        dados_filtrados = gerenciador.dados.copy()
+        
+        if filtro_nome != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['nome'] == filtro_nome]
+        
+        if filtro_empresa != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['empresa'] == filtro_empresa]
+        
+        if filtro_filial != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['filial'] == filtro_filial]
+        
+        if filtro_status != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['status'] == filtro_status]
+        
+        st.subheader(f"📊 Resultados ({len(dados_filtrados)} motoristas)")
+        st.dataframe(dados_filtrados, use_container_width=True)
         
         # Botão de download
-        if not gerenciador.dados.empty:
-            csv = gerenciador.dados.to_csv(index=False)
+        if not dados_filtrados.empty:
+            csv = dados_filtrados.to_csv(index=False)
             st.download_button(
                 label="📥 Download CSV",
                 data=csv,
@@ -924,13 +967,17 @@ elif pagina == "🏢 Cadastrar Cliente":
                 # Sincroniza dados quando usuário é selecionado (fora do contexto de submit)
                 if usuario_selecionado and usuario_selecionado != st.session_state.usuario_selecionado_atual:
                     st.session_state.usuario_selecionado_atual = usuario_selecionado
-                    if gerenciador.validar_usuario_motorista(usuario_selecionado):
-                        st.session_state.dados_sincronizados = gerenciador.sincronizar_dados_cliente(usuario_selecionado)
+                    # CORREÇÃO: Verificar se usuario_selecionado não está vazio antes de validar
+                    if usuario_selecionado and usuario_selecionado.strip():
+                        if gerenciador.validar_usuario_motorista(usuario_selecionado):
+                            st.session_state.dados_sincronizados = gerenciador.sincronizar_dados_cliente(usuario_selecionado)
+                        else:
+                            st.session_state.dados_sincronizados = {}
                     else:
                         st.session_state.dados_sincronizados = {}
                 
                 # Mostra informações do motorista associado (apenas visual)
-                if usuario_selecionado:
+                if usuario_selecionado and usuario_selecionado.strip():
                     if gerenciador.validar_usuario_motorista(usuario_selecionado):
                         nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
                         st.success(f"✅ **Motorista associado:** {nome_motorista}")
@@ -982,34 +1029,38 @@ elif pagina == "🏢 Cadastrar Cliente":
             
             if submitted:
                 if cliente and usuario_selecionado and empresa:
-                    # Validação final antes do cadastro
-                    if not gerenciador.validar_usuario_motorista(usuario_selecionado):
-                        st.error("❌ Usuário do motorista não encontrado. Verifique o usuário selecionado.")
-                    else:
-                        # Obtém o nome do motorista automaticamente
-                        try:
-                            nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                        except Exception as e:
-                            st.error(f"Erro ao obter nome do motorista: {e}")
-                            nome_motorista = ""
-                        
-                        dados_cliente = {
-                            'cliente': cliente,
-                            'nome': nome_motorista,
-                            'usuario': usuario_selecionado,
-                            'empresa': empresa,
-                            'filial': filial,
-                            'status': status
-                        }
-                        
-                        if gerenciador.adicionar_cliente(dados_cliente):
-                            st.success("✅ Cliente cadastrado com sucesso!")
-                            st.balloons()
-                            # Limpa o session_state após cadastro bem-sucedido
-                            st.session_state.dados_sincronizados = {}
-                            st.session_state.usuario_selecionado_atual = ""
+                    # CORREÇÃO: Verificação adicional antes de validar
+                    if usuario_selecionado and usuario_selecionado.strip():
+                        # Validação final antes do cadastro
+                        if not gerenciador.validar_usuario_motorista(usuario_selecionado):
+                            st.error("❌ Usuário do motorista não encontrado. Verifique o usuário selecionado.")
                         else:
-                            st.error("❌ Erro ao cadastrar cliente")
+                            # Obtém o nome do motorista automaticamente
+                            try:
+                                nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                            except Exception as e:
+                                st.error(f"Erro ao obter nome do motorista: {e}")
+                                nome_motorista = ""
+                            
+                            dados_cliente = {
+                                'cliente': cliente,
+                                'nome': nome_motorista,
+                                'usuario': usuario_selecionado,
+                                'empresa': empresa,
+                                'filial': filial,
+                                'status': status
+                            }
+                            
+                            if gerenciador.adicionar_cliente(dados_cliente):
+                                st.success("✅ Cliente cadastrado com sucesso!")
+                                st.balloons()
+                                # Limpa o session_state após cadastro bem-sucedido
+                                st.session_state.dados_sincronizados = {}
+                                st.session_state.usuario_selecionado_atual = ""
+                            else:
+                                st.error("❌ Erro ao cadastrar cliente")
+                    else:
+                        st.warning("⚠️ Selecione um usuário do motorista válido")
                 else:
                     st.warning("⚠️ Preencha os campos obrigatórios (Cliente, Usuário do Motorista, Empresa)")
     
@@ -1064,13 +1115,17 @@ elif pagina == "✏️ Editar Cliente":
                     # Sincroniza dados quando usuário é selecionado (fora do contexto de submit)
                     if usuario_selecionado and usuario_selecionado != st.session_state.usuario_selecionado_edicao:
                         st.session_state.usuario_selecionado_edicao = usuario_selecionado
-                        if gerenciador.validar_usuario_motorista(usuario_selecionado):
-                            st.session_state.dados_sincronizados_edicao = gerenciador.sincronizar_dados_cliente(usuario_selecionado)
+                        # CORREÇÃO: Verificar se usuario_selecionado não está vazio antes de validar
+                        if usuario_selecionado and usuario_selecionado.strip():
+                            if gerenciador.validar_usuario_motorista(usuario_selecionado):
+                                st.session_state.dados_sincronizados_edicao = gerenciador.sincronizar_dados_cliente(usuario_selecionado)
+                            else:
+                                st.session_state.dados_sincronizados_edicao = {}
                         else:
                             st.session_state.dados_sincronizados_edicao = {}
                     
                     # Mostra informações do motorista associado (apenas visual)
-                    if usuario_selecionado:
+                    if usuario_selecionado and usuario_selecionado.strip():
                         if gerenciador.validar_usuario_motorista(usuario_selecionado):
                             nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
                             st.success(f"✅ **Motorista associado:** {nome_motorista}")
@@ -1122,31 +1177,35 @@ elif pagina == "✏️ Editar Cliente":
                 
                 if submitted:
                     if cliente and usuario_selecionado and empresa:
-                        # Validação final antes da atualização
-                        if not gerenciador.validar_usuario_motorista(usuario_selecionado):
-                            st.error("❌ Usuário do motorista não encontrado. Verifique o usuário selecionado.")
-                        else:
-                            # Obtém o nome do motorista automaticamente
-                            try:
-                                nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                            except Exception as e:
-                                st.error(f"Erro ao obter nome do motorista: {e}")
-                                nome_motorista = ""
-                            
-                            dados_atualizados = {
-                                'cliente': cliente,
-                                'nome': nome_motorista,
-                                'usuario': usuario_selecionado,
-                                'empresa': empresa,
-                                'filial': filial,
-                                'status': status
-                            }
-                            
-                            if gerenciador.atualizar_cliente(index, dados_atualizados):
-                                st.success("✅ Cliente atualizado com sucesso!")
-                                st.rerun()
+                        # CORREÇÃO: Verificação adicional antes de validar
+                        if usuario_selecionado and usuario_selecionado.strip():
+                            # Validação final antes da atualização
+                            if not gerenciador.validar_usuario_motorista(usuario_selecionado):
+                                st.error("❌ Usuário do motorista não encontrado. Verifique o usuário selecionado.")
                             else:
-                                st.error("❌ Erro ao atualizar cliente")
+                                # Obtém o nome do motorista automaticamente
+                                try:
+                                    nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                                except Exception as e:
+                                    st.error(f"Erro ao obter nome do motorista: {e}")
+                                    nome_motorista = ""
+                                
+                                dados_atualizados = {
+                                    'cliente': cliente,
+                                    'nome': nome_motorista,
+                                    'usuario': usuario_selecionado,
+                                    'empresa': empresa,
+                                    'filial': filial,
+                                    'status': status
+                                }
+                                
+                                if gerenciador.atualizar_cliente(index, dados_atualizados):
+                                    st.success("✅ Cliente atualizado com sucesso!")
+                                    st.rerun()
+                                else:
+                                    st.error("❌ Erro ao atualizar cliente")
+                        else:
+                            st.warning("⚠️ Selecione um usuário do motorista válido")
                     else:
                         st.warning("⚠️ Preencha os campos obrigatórios")
     else:
