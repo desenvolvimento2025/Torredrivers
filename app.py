@@ -927,7 +927,7 @@ elif pagina == "📋 Lista Completa":
     else:
         st.info("Nenhum motorista cadastrado.")
 
-# PÁGINA: Cadastrar Cliente - VERSÃO SIMPLIFICADA
+# PÁGINA: Cadastrar Cliente - VERSÃO CORRIGIDA
 elif pagina == "🏢 Cadastrar Cliente":
     st.title("🏢 Cadastrar Novo Cliente")
     
@@ -963,26 +963,30 @@ elif pagina == "🏢 Cadastrar Cliente":
             with col2:
                 # Campo nome do motorista (apenas para visualização)
                 if usuario_selecionado and usuario_selecionado.strip():
-                    if gerenciador.validar_usuario_motorista(usuario_selecionado):
-                        nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                        st.text_input(
-                            "Nome do Motorista (automático)", 
-                            value=nome_motorista,
-                            disabled=True,
-                            help="Nome do motorista associado - preenchido automaticamente"
-                        )
-                        
-                        # Mostra informações adicionais do motorista
-                        dados_motorista = gerenciador.sincronizar_dados_cliente(usuario_selecionado)
-                        if dados_motorista:
-                            st.info(f"""
-                            **Informações do Motorista:**
-                            - 🏢 Empresa: {dados_motorista.get('empresa', 'N/A')}
-                            - 🏷️ Filial: {dados_motorista.get('filial', 'N/A')}
-                            - 📊 Status: {dados_motorista.get('status', 'N/A')}
-                            """)
-                    else:
-                        st.error("❌ Usuário não encontrado na tabela de motoristas")
+                    # CORREÇÃO: Verificação segura antes de chamar validar_usuario_motorista
+                    try:
+                        if gerenciador.validar_usuario_motorista(usuario_selecionado):
+                            nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                            st.text_input(
+                                "Nome do Motorista (automático)", 
+                                value=nome_motorista,
+                                disabled=True,
+                                help="Nome do motorista associado - preenchido automaticamente"
+                            )
+                            
+                            # Mostra informações adicionais do motorista
+                            dados_motorista = gerenciador.sincronizar_dados_cliente(usuario_selecionado)
+                            if dados_motorista:
+                                st.info(f"""
+                                **Informações do Motorista:**
+                                - 🏢 Empresa: {dados_motorista.get('empresa', 'N/A')}
+                                - 🏷️ Filial: {dados_motorista.get('filial', 'N/A')}
+                                - 📊 Status: {dados_motorista.get('status', 'N/A')}
+                                """)
+                        else:
+                            st.error("❌ Usuário não encontrado na tabela de motoristas")
+                    except Exception as e:
+                        st.error(f"Erro ao validar usuário: {e}")
                 else:
                     st.info("🔍 Selecione um usuário do motorista para visualizar as informações")
             
@@ -993,41 +997,44 @@ elif pagina == "🏢 Cadastrar Cliente":
                 if cliente and usuario_selecionado:
                     # CORREÇÃO: Verificação adicional antes de validar
                     if usuario_selecionado and usuario_selecionado.strip():
-                        # Validação final antes do cadastro
-                        if not gerenciador.validar_usuario_motorista(usuario_selecionado):
-                            st.error("❌ Usuário do motorista não encontrado. Verifique o usuário selecionado.")
-                        else:
-                            # Obtém o nome do motorista automaticamente
-                            try:
-                                nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                                # Obtém os dados completos do motorista para preencher empresa, filial e status
-                                dados_motorista = gerenciador.sincronizar_dados_cliente(usuario_selecionado)
-                            except Exception as e:
-                                st.error(f"Erro ao obter dados do motorista: {e}")
-                                nome_motorista = ""
-                                dados_motorista = {}
-                            
-                            # PREENCHE AUTOMATICAMENTE OS CAMPOS empresa, filial, status
-                            dados_cliente = {
-                                'cliente': cliente,
-                                'nome': nome_motorista,
-                                'usuario': usuario_selecionado,
-                                'empresa': dados_motorista.get('empresa', ''),
-                                'filial': dados_motorista.get('filial', ''),
-                                'status': dados_motorista.get('status', 'ATIVO')
-                            }
-                            
-                            if gerenciador.adicionar_cliente(dados_cliente):
-                                st.success("✅ Cliente cadastrado com sucesso!")
-                                st.balloons()
-                                st.info(f"""
-                                **Dados salvos automaticamente:**
-                                - 🏢 Empresa: {dados_cliente['empresa']}
-                                - 🏷️ Filial: {dados_cliente['filial']}
-                                - 📊 Status: {dados_cliente['status']}
-                                """)
+                        # Validação final antes do cadastro com tratamento de erro
+                        try:
+                            if not gerenciador.validar_usuario_motorista(usuario_selecionado):
+                                st.error("❌ Usuário do motorista não encontrado. Verifique o usuário selecionado.")
                             else:
-                                st.error("❌ Erro ao cadastrar cliente")
+                                # Obtém o nome do motorista automaticamente
+                                try:
+                                    nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                                    # Obtém os dados completos do motorista para preencher empresa, filial e status
+                                    dados_motorista = gerenciador.sincronizar_dados_cliente(usuario_selecionado)
+                                except Exception as e:
+                                    st.error(f"Erro ao obter dados do motorista: {e}")
+                                    nome_motorista = ""
+                                    dados_motorista = {}
+                                
+                                # PREENCHE AUTOMATICAMENTE OS CAMPOS empresa, filial, status
+                                dados_cliente = {
+                                    'cliente': cliente,
+                                    'nome': nome_motorista,
+                                    'usuario': usuario_selecionado,
+                                    'empresa': dados_motorista.get('empresa', ''),
+                                    'filial': dados_motorista.get('filial', ''),
+                                    'status': dados_motorista.get('status', 'ATIVO')
+                                }
+                                
+                                if gerenciador.adicionar_cliente(dados_cliente):
+                                    st.success("✅ Cliente cadastrado com sucesso!")
+                                    st.balloons()
+                                    st.info(f"""
+                                    **Dados salvos automaticamente:**
+                                    - 🏢 Empresa: {dados_cliente['empresa']}
+                                    - 🏷️ Filial: {dados_cliente['filial']}
+                                    - 📊 Status: {dados_cliente['status']}
+                                    """)
+                                else:
+                                    st.error("❌ Erro ao cadastrar cliente")
+                        except Exception as e:
+                            st.error(f"Erro durante a validação: {e}")
                     else:
                         st.warning("⚠️ Selecione um usuário do motorista válido")
                 else:
@@ -1080,25 +1087,29 @@ elif pagina == "✏️ Editar Cliente":
                 with col2:
                     # Campo nome do motorista (apenas para visualização)
                     if usuario_selecionado and usuario_selecionado.strip():
-                        if gerenciador.validar_usuario_motorista(usuario_selecionado):
-                            nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                            st.text_input(
-                                "Nome do Motorista (automático)", 
-                                value=nome_motorista,
-                                disabled=True
-                            )
-                            
-                            # Mostra informações adicionais do motorista
-                            dados_motorista = gerenciador.sincronizar_dados_cliente(usuario_selecionado)
-                            if dados_motorista:
-                                st.info(f"""
-                                **Informações do Motorista:**
-                                - 🏢 Empresa: {dados_motorista.get('empresa', 'N/A')}
-                                - 🏷️ Filial: {dados_motorista.get('filial', 'N/A')}
-                                - 📊 Status: {dados_motorista.get('status', 'N/A')}
-                                """)
-                        else:
-                            st.error("❌ Usuário não encontrado na tabela de motoristas")
+                        # CORREÇÃO: Verificação segura antes de chamar validar_usuario_motorista
+                        try:
+                            if gerenciador.validar_usuario_motorista(usuario_selecionado):
+                                nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                                st.text_input(
+                                    "Nome do Motorista (automático)", 
+                                    value=nome_motorista,
+                                    disabled=True
+                                )
+                                
+                                # Mostra informações adicionais do motorista
+                                dados_motorista = gerenciador.sincronizar_dados_cliente(usuario_selecionado)
+                                if dados_motorista:
+                                    st.info(f"""
+                                    **Informações do Motorista:**
+                                    - 🏢 Empresa: {dados_motorista.get('empresa', 'N/A')}
+                                    - 🏷️ Filial: {dados_motorista.get('filial', 'N/A')}
+                                    - 📊 Status: {dados_motorista.get('status', 'N/A')}
+                                    """)
+                            else:
+                                st.error("❌ Usuário não encontrado na tabela de motoristas")
+                        except Exception as e:
+                            st.error(f"Erro ao validar usuário: {e}")
                     else:
                         st.info("🔍 Selecione um usuário do motorista para visualizar as informações")
                 
@@ -1109,41 +1120,44 @@ elif pagina == "✏️ Editar Cliente":
                     if cliente and usuario_selecionado:
                         # CORREÇÃO: Verificação adicional antes de validar
                         if usuario_selecionado and usuario_selecionado.strip():
-                            # Validação final antes da atualização
-                            if not gerenciador.validar_usuario_motorista(usuario_selecionado):
-                                st.error("❌ Usuário do motorista não encontrado. Verifique o usuário selecionado.")
-                            else:
-                                # Obtém o nome do motorista automaticamente
-                                try:
-                                    nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                                    # Obtém os dados completos do motorista para preencher empresa, filial e status
-                                    dados_motorista = gerenciador.sincronizar_dados_cliente(usuario_selecionado)
-                                except Exception as e:
-                                    st.error(f"Erro ao obter dados do motorista: {e}")
-                                    nome_motorista = ""
-                                    dados_motorista = {}
-                                
-                                # PREENCHE AUTOMATICAMENTE OS CAMPOS empresa, filial, status
-                                dados_atualizados = {
-                                    'cliente': cliente,
-                                    'nome': nome_motorista,
-                                    'usuario': usuario_selecionado,
-                                    'empresa': dados_motorista.get('empresa', ''),
-                                    'filial': dados_motorista.get('filial', ''),
-                                    'status': dados_motorista.get('status', 'ATIVO')
-                                }
-                                
-                                if gerenciador.atualizar_cliente(index, dados_atualizados):
-                                    st.success("✅ Cliente atualizado com sucesso!")
-                                    st.info(f"""
-                                    **Dados atualizados automaticamente:**
-                                    - 🏢 Empresa: {dados_atualizados['empresa']}
-                                    - 🏷️ Filial: {dados_atualizados['filial']}
-                                    - 📊 Status: {dados_atualizados['status']}
-                                    """)
-                                    st.rerun()
+                            # Validação final antes da atualização com tratamento de erro
+                            try:
+                                if not gerenciador.validar_usuario_motorista(usuario_selecionado):
+                                    st.error("❌ Usuário do motorista não encontrado. Verifique o usuário selecionado.")
                                 else:
-                                    st.error("❌ Erro ao atualizar cliente")
+                                    # Obtém o nome do motorista automaticamente
+                                    try:
+                                        nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
+                                        # Obtém os dados completos do motorista para preencher empresa, filial e status
+                                        dados_motorista = gerenciador.sincronizar_dados_cliente(usuario_selecionado)
+                                    except Exception as e:
+                                        st.error(f"Erro ao obter dados do motorista: {e}")
+                                        nome_motorista = ""
+                                        dados_motorista = {}
+                                    
+                                    # PREENCHE AUTOMATICAMENTE OS CAMPOS empresa, filial, status
+                                    dados_atualizados = {
+                                        'cliente': cliente,
+                                        'nome': nome_motorista,
+                                        'usuario': usuario_selecionado,
+                                        'empresa': dados_motorista.get('empresa', ''),
+                                        'filial': dados_motorista.get('filial', ''),
+                                        'status': dados_motorista.get('status', 'ATIVO')
+                                    }
+                                    
+                                    if gerenciador.atualizar_cliente(index, dados_atualizados):
+                                        st.success("✅ Cliente atualizado com sucesso!")
+                                        st.info(f"""
+                                        **Dados atualizados automaticamente:**
+                                        - 🏢 Empresa: {dados_atualizados['empresa']}
+                                        - 🏷️ Filial: {dados_atualizados['filial']}
+                                        - 📊 Status: {dados_atualizados['status']}
+                                        """)
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Erro ao atualizar cliente")
+                            except Exception as e:
+                                st.error(f"Erro durante a validação: {e}")
                         else:
                             st.warning("⚠️ Selecione um usuário do motorista válido")
                     else:
