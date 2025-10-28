@@ -237,7 +237,7 @@ class GerenciadorMotoristas:
         """Verifica se existem dados de clientes"""
         return self.dados_clientes is not None and not self.dados_clientes.empty
 
-    # MÉTODOS NOVOS ADICIONADOS PARA CORRIGIR O ERRO
+    # MÉTODOS PARA ASSOCIAÇÃO CLIENTES-MOTORISTAS
     def obter_usuarios_motoristas(self):
         """Obtém lista de usuários únicos dos motoristas"""
         try:
@@ -265,6 +265,57 @@ class GerenciadorMotoristas:
         except Exception as e:
             st.error(f"Erro ao obter nome por usuário: {e}")
             return ""
+
+    def validar_usuario_motorista(self, usuario):
+        """Valida se usuário existe na tabela motoristas"""
+        try:
+            if self.dados is not None and not self.dados.empty and 'usuario' in self.dados.columns:
+                usuarios_existentes = self.dados['usuario'].astype(str).str.strip().tolist()
+                return str(usuario).strip() in usuarios_existentes
+            return False
+        except Exception as e:
+            st.error(f"Erro ao validar usuário: {e}")
+            return False
+
+    def sincronizar_dados_cliente(self, usuario):
+        """Sincroniza dados do motorista para o cliente automaticamente"""
+        try:
+            if self.dados is not None and not self.dados.empty:
+                motorista = self.dados[self.dados['usuario'].astype(str).str.strip() == str(usuario).strip()]
+                if not motorista.empty:
+                    return {
+                        'nome': motorista.iloc[0].get('nome', ''),
+                        'empresa': motorista.iloc[0].get('empresa', ''),
+                        'filial': motorista.iloc[0].get('filial', ''),
+                        'status': motorista.iloc[0].get('status', '')
+                    }
+            return {}
+        except Exception as e:
+            st.error(f"Erro ao sincronizar dados: {e}")
+            return {}
+
+    def atualizar_clientes_por_motorista(self, usuario_antigo, usuario_novo):
+        """Atualiza todos os clientes quando um motorista é editado"""
+        try:
+            if self.tem_dados_clientes():
+                # Encontra clientes associados ao usuário antigo
+                mask = self.dados_clientes['usuario'].astype(str).str.strip() == str(usuario_antigo).strip()
+                clientes_afetados = self.dados_clientes[mask]
+                
+                for index in clientes_afetados.index:
+                    dados_sincronizados = self.sincronizar_dados_cliente(usuario_novo)
+                    if dados_sincronizados:
+                        self.dados_clientes.at[index, 'usuario'] = usuario_novo
+                        self.dados_clientes.at[index, 'nome'] = dados_sincronizados['nome']
+                        self.dados_clientes.at[index, 'empresa'] = dados_sincronizados['empresa']
+                        self.dados_clientes.at[index, 'filial'] = dados_sincronizados['filial']
+                        self.dados_clientes.at[index, 'status'] = dados_sincronizados['status']
+                
+                return self.salvar_dados()
+            return True
+        except Exception as e:
+            st.error(f"Erro ao atualizar clientes: {e}")
+            return False
 
 # Inicialização do gerenciador
 @st.cache_resource
@@ -708,6 +759,10 @@ elif pagina == "✏️ Editar Motorista":
                 
                 if submitted:
                     if nome and usuario and empresa:
+                        # VERIFICAR SE USUÁRIO FOI ALTERADO
+                        usuario_antigo = motorista_data.get('usuario', '')
+                        usuario_novo = usuario
+                        
                         dados_atualizados = {
                             'nome': nome,
                             'usuario': usuario,
@@ -734,6 +789,11 @@ elif pagina == "✏️ Editar Motorista":
                             'interj-menor8': interj_menor8,
                             'interj-maior8': interj_maior8
                         }
+                        
+                        if usuario_antigo != usuario_novo:
+                            # SINCRONIZAR CLIENTES ASSOCIADOS
+                            with st.spinner("Atualizando clientes associados..."):
+                                gerenciador.atualizar_clientes_por_motorista(usuario_antigo, usuario_novo)
                         
                         if gerenciador.atualizar_motorista(index, dados_atualizados):
                             st.success("✅ Motorista atualizado com sucesso!")
@@ -1085,29 +1145,39 @@ elif pagina == "🏢 Cadastrar Cliente":
             st.error(f"Erro ao carregar usuários dos motoristas: {e}")
             usuarios_motoristas = []
         
+        # Variável para dados sincronizados
+        dados_sincronizados = {}
+        
         with st.form("form_cliente"):
             st.subheader("Informações do Cliente")
             col1, col2 = st.columns(2)
             
             with col1:
                 cliente = st.text_input("Nome do Cliente*")
-                # Dropdown com os usuários dos motoristas
                 usuario_selecionado = st.selectbox("Usuário do Motorista*", [""] + usuarios_motoristas)
-                # Mostra o nome do motorista associado ao usuário selecionado
+                
+                # VALIDAÇÃO EM TEMPO REAL
                 if usuario_selecionado:
-                    try:
+                    if gerenciador.validar_usuario_motorista(usuario_selecionado):
                         nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                        if nome_motorista:
-                            st.info(f"**Motorista associado:** {nome_motorista}")
-                        else:
-                            st.warning("Usuário não encontrado na tabela de motoristas")
-                    except Exception as e:
-                        st.error(f"Erro ao buscar motorista: {e}")
+                        dados_sincronizados = gerenciador.sincronizar_dados_cliente(usuario_selecionado)
+                        
+                        st.success(f"✅ **Motorista associado:** {nome_motorista}")
+                        st.info(f"🏢 Empresa: {dados_sincronizados.get('empresa', '')} | 🏷️ Filial: {dados_sincronizados.get('filial', '')} | 📊 Status: {dados_sincronizados.get('status', '')}")
+                    else:
+                        st.error("❌ Usuário não encontrado na tabela de motoristas")
+                        dados_sincronizados = {}
             
             with col2:
-                empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"])
-                filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"])
-                status = st.selectbox("Status*", ["ATIVO", "INATIVO"])
+                # CAMPOS PREENCHIDOS AUTOMATICAMENTE
+                empresa = st.text_input("Empresa*", 
+                                       value=dados_sincronizados.get('empresa', ''),
+                                       disabled=bool(dados_sincronizados.get('empresa')))
+                filial = st.text_input("Filial*", 
+                                      value=dados_sincronizados.get('filial', ''),
+                                      disabled=bool(dados_sincronizados.get('filial')))
+                status = st.selectbox("Status*", ["ATIVO", "INATIVO"], 
+                                    index=0 if dados_sincronizados.get('status') == 'ATIVO' else 1)
             
             submitted = st.form_submit_button("💾 Cadastrar Cliente")
             
@@ -1165,6 +1235,9 @@ elif pagina == "✏️ Editar Cliente":
                 st.error(f"Erro ao carregar usuários dos motoristas: {e}")
                 usuarios_motoristas = []
             
+            # Variável para dados sincronizados
+            dados_sincronizados = {}
+            
             with st.form("form_edicao_cliente"):
                 st.subheader("Informações do Cliente")
                 col1, col2 = st.columns(2)
@@ -1177,24 +1250,28 @@ elif pagina == "✏️ Editar Cliente":
                     indice_atual = opcoes_usuarios.index(usuario_atual) if usuario_atual in opcoes_usuarios else 0
                     usuario_selecionado = st.selectbox("Usuário do Motorista*", opcoes_usuarios, index=indice_atual)
                     
-                    # Mostra o nome do motorista associado ao usuário selecionado
+                    # VALIDAÇÃO EM TEMPO REAL
                     if usuario_selecionado:
-                        try:
+                        if gerenciador.validar_usuario_motorista(usuario_selecionado):
                             nome_motorista = gerenciador.obter_nome_por_usuario(usuario_selecionado)
-                            if nome_motorista:
-                                st.info(f"**Motorista associado:** {nome_motorista}")
-                            else:
-                                st.warning("Usuário não encontrado na tabela de motoristas")
-                        except Exception as e:
-                            st.error(f"Erro ao buscar motorista: {e}")
+                            dados_sincronizados = gerenciador.sincronizar_dados_cliente(usuario_selecionado)
+                            
+                            st.success(f"✅ **Motorista associado:** {nome_motorista}")
+                            st.info(f"🏢 Empresa: {dados_sincronizados.get('empresa', '')} | 🏷️ Filial: {dados_sincronizados.get('filial', '')}")
+                        else:
+                            st.error("❌ Usuário não encontrado na tabela de motoristas")
+                            dados_sincronizados = {}
                 
                 with col2:
-                    empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"],
-                                         index=["EXPRESSO", "LOGIKA"].index(cliente_data.get('empresa', 'EXPRESSO')))
-                    filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"],
-                                        index=["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"].index(cliente_data.get('filial', 'SPO')))
-                    status = st.selectbox("Status*", ["ATIVO", "INATIVO"],
-                                        index=["ATIVO", "INATIVO"].index(cliente_data.get('status', 'ATIVO')))
+                    # CAMPOS PREENCHIDOS AUTOMATICAMENTE
+                    empresa = st.text_input("Empresa*", 
+                                          value=dados_sincronizados.get('empresa', cliente_data.get('empresa', '')),
+                                          disabled=bool(dados_sincronizados.get('empresa')))
+                    filial = st.text_input("Filial*", 
+                                         value=dados_sincronizados.get('filial', cliente_data.get('filial', '')),
+                                         disabled=bool(dados_sincronizados.get('filial')))
+                    status = st.selectbox("Status*", ["ATIVO", "INATIVO"], 
+                                        index=0 if (dados_sincronizados.get('status') or cliente_data.get('status')) == 'ATIVO' else 1)
                 
                 submitted = st.form_submit_button("💾 Atualizar Cliente")
                 
