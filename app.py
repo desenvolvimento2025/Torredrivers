@@ -14,8 +14,7 @@ from pathlib import Path
 st.set_page_config(
     page_title="Sistema de Motoristas",
     page_icon="🚗",
-    layout="wide",
-    initial_sidebar_state="collapsed"  # Menu minimizado por padrão
+    layout="wide"
 )
 
 # ESTRUTURA ATUALIZADA COM NOMES EXATOS DO TEMPLATE
@@ -437,10 +436,10 @@ if pagina == "📄 Arquivos HTML":
         conteudo_html = gerenciador_html.obter_conteudo_html(arquivo_selecionado)
         
         if conteudo_html:
-            # Renderizar HTML em tela cheia - MAIS FOCO NA VISUALIZAÇÃO
+            # Renderizar HTML em tela cheia
             st.markdown("---")
             
-            # Altura máxima para tela cheia - AUMENTADA
+            # Altura máxima para tela cheia
             altura = 900
             
             # Renderizar HTML diretamente em tela cheia
