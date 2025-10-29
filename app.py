@@ -414,8 +414,8 @@ if pagina == "📄 Arquivos HTML":
         else:
             arquivo_selecionado = gerenciador_html.arquivos_html[0]
         
-        # Botões de ação compactos em uma linha - APENAS DOWNLOAD
-        col1, col2 = st.columns([1, 11])
+        # Botões de ação compactos em uma linha
+        col1, col2, col3, col4 = st.columns([1, 1, 1, 7])
         
         with col1:
             # Download do arquivo
@@ -430,6 +430,18 @@ if pagina == "📄 Arquivos HTML":
                 )
         
         with col2:
+            # Ver código fonte
+            if st.button("📝", help="Ver código fonte"):
+                st.session_state.mostrar_codigo_fonte = not st.session_state.get('mostrar_codigo_fonte', False)
+                st.rerun()
+        
+        with col3:
+            # Atualizar lista
+            if st.button("🔄", help="Atualizar lista"):
+                gerenciador_html.carregar_arquivos()
+                st.rerun()
+        
+        with col4:
             st.write(f"**Visualizando:** {arquivo_selecionado}")
         
         # Obter conteúdo do arquivo
@@ -440,10 +452,15 @@ if pagina == "📄 Arquivos HTML":
             st.markdown("---")
             
             # Altura máxima para tela cheia
-            altura = 900
+            altura = 800
             
             # Renderizar HTML diretamente em tela cheia
             st.components.v1.html(conteudo_html, height=altura, scrolling=True)
+            
+            # Mostrar código fonte se solicitado (em expander para não atrapalhar a visualização)
+            if st.session_state.get('mostrar_codigo_fonte', False):
+                with st.expander("📝 Código Fonte do Relatório", expanded=True):
+                    st.code(conteudo_html, language='html')
         
         else:
             st.error("❌ Não foi possível carregar o conteúdo do relatório")
