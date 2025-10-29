@@ -479,62 +479,36 @@ if st.session_state.pagina == "📄 Arquivos HTML":
                     gerenciador_html.carregar_arquivos()
                     st.rerun()
             with col3:
-                # Botão para menu - CORRIGIDO
+                # Botão para menu - CORRIGIDO E FUNCIONAL
                 if st.button("📋 Menu", help="Abrir menu principal", key="open_menu"):
                     st.session_state.menu_expandido = True
                     st.rerun()
         else:
             arquivo_selecionado = gerenciador_html.arquivos_html[0]
             
-            # Botões de ação em uma linha
-            col1, col2, col3 = st.columns([1, 1, 1])
+            # Botões de ação em uma linha - REMOVIDOS OS BOTÕES EXTRAS
+            col1, col2 = st.columns([1, 1])
             with col1:
                 if st.button("🔄", help="Atualizar lista", key="refresh_list_single"):
                     gerenciador_html.carregar_arquivos()
                     st.rerun()
             with col2:
-                # Botão para menu - CORRIGIDO
+                # Botão para menu - CORRIGIDO E FUNCIONAL
                 if st.button("📋 Menu", help="Abrir menu principal", key="open_menu_single"):
                     st.session_state.menu_expandido = True
                     st.rerun()
-            with col3:
-                st.write(f"**Visualizando:** {arquivo_selecionado}")
         
         # Obter conteúdo do arquivo
         conteudo_html = gerenciador_html.obter_conteudo_html(arquivo_selecionado)
         
         if conteudo_html:
-            # Botões de ação flutuantes
-            col_actions1, col_actions2, col_actions3 = st.columns([1, 1, 1])
-            
-            with col_actions1:
-                # Download do arquivo
-                st.download_button(
-                    label="📥 Baixar",
-                    data=conteudo_html,
-                    file_name=arquivo_selecionado,
-                    mime="text/html",
-                    use_container_width=True,
-                    key="download_html"
-                )
-            
-            with col_actions2:
-                # Ver código fonte
-                if st.button("📝 Código Fonte", use_container_width=True, key="show_code"):
-                    st.session_state.mostrar_codigo_fonte = not st.session_state.mostrar_codigo_fonte
-                    st.rerun()
-            
-            with col_actions3:
-                # Navegar para gerenciador
-                if st.button("⚙️ Gerenciar", use_container_width=True, key="go_manage"):
-                    st.session_state.pagina = "🌐 Gerenciar HTML"
-                    st.rerun()
+            # REMOVIDOS OS BOTÕES: Baixar, Código Fonte, Gerenciar
             
             # Renderizar HTML em tela cheia
             st.markdown("---")
             
-            # Altura máxima para tela cheia (calculada dinamicamente)
-            altura = 750
+            # Altura máxima para tela cheia
+            altura = 800
             
             # Renderizar HTML diretamente em tela cheia
             st.components.v1.html(conteudo_html, height=altura, scrolling=True)
@@ -1648,7 +1622,7 @@ elif st.session_state.pagina == "🌐 Gerenciar HTML":
         ### Instruções para Importação:
         - **Formato suportado**: .html
         - **Limpeza automática**: Todos os arquivos anteriores serão removidos
-        - **Visualização**: Clique no arquivo na aba "Arquivos Disponíveis" para visualizar
+        - **Visualização**: Clique na aba "Arquivos Disponíveis" para visualizar
         """)
         
         # Upload do arquivo HTML
