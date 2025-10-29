@@ -15,7 +15,7 @@ st.set_page_config(
     page_title="Sistema de Motoristas",
     page_icon="🚗",
     layout="wide",
-    initial_sidebar_state="collapsed"  # Sidebar colapsado por padrão
+    initial_sidebar_state="collapsed"
 )
 
 # ESTRUTURA ATUALIZADA COM NOMES EXATOS DO TEMPLATE
@@ -316,7 +316,6 @@ class GerenciadorMotoristas:
         """Verifica se existem dados de clientes"""
         return self.dados_clientes is not None and not self.dados_clientes.empty
 
-    # MÉTODOS NOVOS ADICIONADOS PARA CORRIGIR O ERRO
     def obter_usuarios_motoristas(self):
         """Obtém lista de usuários únicos dos motoristas"""
         try:
@@ -352,7 +351,7 @@ def get_gerenciador():
 
 gerenciador = get_gerenciador()
 
-# Inicialização da sessão - CORREÇÃO AQUI
+# Inicialização da sessão - SIMPLIFICADA
 if 'pagina' not in st.session_state:
     st.session_state.pagina = "📄 Arquivos HTML"
 
@@ -362,62 +361,29 @@ if 'menu_aberto' not in st.session_state:
 if 'mostrar_codigo_fonte' not in st.session_state:
     st.session_state.mostrar_codigo_fonte = False
 
-# Auto-atualização a cada 1 hora
-if 'ultima_atualizacao' not in st.session_state:
-    st.session_state.ultima_atualizacao = datetime.now()
-
-tempo_decorrido = datetime.now() - st.session_state.ultima_atualizacao
-if tempo_decorrido.total_seconds() > 3600:  # 1 hora
-    st.session_state.ultima_atualizacao = datetime.now()
-    gerenciador.carregar_dados()
-    st.rerun()
-
 # Carrega dados
 if gerenciador.dados is None:
     gerenciador.carregar_dados()
 
-# Função auxiliar para obter valores únicos de colunas com segurança
-def obter_valores_unicos(coluna, dados):
-    """Obtém valores únicos de uma coluna com tratamento de erro"""
-    try:
-        if dados is not None and not dados.empty and coluna in dados.columns:
-            valores = dados[coluna].dropna().unique().tolist()
-            # Remove valores vazios
-            valores = [v for v in valores if v and str(v).strip() and str(v).lower() != 'nan']
-            return valores
-        else:
-            return []
-    except Exception:
-        return []
-
-# CSS para esconder elementos do Streamlit
-hide_streamlit_style = """
+# CSS SIMPLIFICADO
+st.markdown("""
 <style>
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
-</style>
-"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-# CSS para o menu flutuante
-menu_css = """
-<style>
 .menu-flutuante {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     background: white;
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     z-index: 1000;
     border: 2px solid #e0e0e0;
-    min-width: 400px;
-    max-width: 90vw;
-    max-height: 80vh;
-    overflow-y: auto;
+    min-width: 300px;
 }
 .overlay {
     position: fixed;
@@ -428,429 +394,291 @@ menu_css = """
     background: rgba(0,0,0,0.5);
     z-index: 999;
 }
-.botao-menu {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.botao-menu-principal {
+    background: #667eea;
     color: white;
     border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-.botao-menu:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-}
-.botao-opcao {
-    width: 100%;
-    margin: 8px 0;
-    padding: 12px;
-    background: #f8f9fa;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
+    padding: 10px 20px;
+    border-radius: 5px;
     font-size: 14px;
-    text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
+    margin: 5px;
 }
-.botao-opcao:hover {
-    background: #007bff;
-    color: white;
-    border-color: #007bff;
-    transform: translateX(5px);
+.botao-menu-principal:hover {
+    background: #5a6fd8;
 }
 </style>
-"""
-st.markdown(menu_css, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# Função para renderizar o menu principal
-def renderizar_menu_principal():
-    """Renderiza o menu principal como overlay"""
+# FUNÇÃO DO MENU PRINCIPAL - SIMPLIFICADA
+def mostrar_menu_principal():
+    """Mostra o menu principal como overlay"""
+    # Overlay de fundo
     st.markdown('<div class="overlay"></div>', unsafe_allow_html=True)
     
+    # Container do menu
     with st.container():
         st.markdown('<div class="menu-flutuante">', unsafe_allow_html=True)
         
-        st.markdown("## 🚗 Sistema de Motoristas")
+        st.markdown("### 🚗 Menu Principal")
         st.markdown("---")
         
-        # Organização das opções em colunas
-        col1, col2 = st.columns(2)
+        # Opções do menu
+        opcoes = [
+            ("📄 Arquivos HTML", "📄 Arquivos HTML"),
+            ("📊 Dashboard", "📊 Dashboard"),
+            ("👥 Cadastrar Motorista", "👥 Cadastrar Motorista"),
+            ("📤 Importar Excel", "📤 Importar Excel"),
+            ("✏️ Editar Motorista", "✏️ Editar Motorista"),
+            ("🗑️ Excluir Motorista", "🗑️ Excluir Motorista"),
+            ("📋 Lista Completa", "📋 Lista Completa"),
+            ("🏢 Cadastrar Cliente", "🏢 Cadastrar Cliente"),
+            ("✏️ Editar Cliente", "✏️ Editar Cliente"),
+            ("🗑️ Excluir Cliente", "🗑️ Excluir Cliente"),
+            ("📋 Lista de Clientes", "📋 Lista de Clientes"),
+            ("🌐 Gerenciar HTML", "🌐 Gerenciar HTML")
+        ]
         
-        with col1:
-            st.markdown("### 📊 Motoristas")
-            if st.button("📊 Dashboard", key="menu_dashboard", use_container_width=True):
-                st.session_state.pagina = "📊 Dashboard"
-                st.session_state.menu_aberto = False
-                st.rerun()
-            
-            if st.button("👥 Cadastrar Motorista", key="menu_cadastrar", use_container_width=True):
-                st.session_state.pagina = "👥 Cadastrar Motorista"
-                st.session_state.menu_aberto = False
-                st.rerun()
-            
-            if st.button("📤 Importar Excel", key="menu_importar", use_container_width=True):
-                st.session_state.pagina = "📤 Importar Excel"
-                st.session_state.menu_aberto = False
-                st.rerun()
-            
-            if st.button("✏️ Editar Motorista", key="menu_editar", use_container_width=True):
-                st.session_state.pagina = "✏️ Editar Motorista"
-                st.session_state.menu_aberto = False
-                st.rerun()
-            
-            if st.button("🗑️ Excluir Motorista", key="menu_excluir", use_container_width=True):
-                st.session_state.pagina = "🗑️ Excluir Motorista"
-                st.session_state.menu_aberto = False
-                st.rerun()
-            
-            if st.button("📋 Lista Completa", key="menu_lista", use_container_width=True):
-                st.session_state.pagina = "📋 Lista Completa"
-                st.session_state.menu_aberto = False
-                st.rerun()
-        
-        with col2:
-            st.markdown("### 🏢 Clientes")
-            if st.button("🏢 Cadastrar Cliente", key="menu_cad_cliente", use_container_width=True):
-                st.session_state.pagina = "🏢 Cadastrar Cliente"
-                st.session_state.menu_aberto = False
-                st.rerun()
-            
-            if st.button("✏️ Editar Cliente", key="menu_edit_cliente", use_container_width=True):
-                st.session_state.pagina = "✏️ Editar Cliente"
-                st.session_state.menu_aberto = False
-                st.rerun()
-            
-            if st.button("🗑️ Excluir Cliente", key="menu_del_cliente", use_container_width=True):
-                st.session_state.pagina = "🗑️ Excluir Cliente"
-                st.session_state.menu_aberto = False
-                st.rerun()
-            
-            if st.button("📋 Lista de Clientes", key="menu_lista_clientes", use_container_width=True):
-                st.session_state.pagina = "📋 Lista de Clientes"
-                st.session_state.menu_aberto = False
-                st.rerun()
-            
-            st.markdown("### 🌐 Sistema")
-            if st.button("🌐 Gerenciar HTML", key="menu_gerenciar", use_container_width=True):
-                st.session_state.pagina = "🌐 Gerenciar HTML"
+        for texto, pagina in opcoes:
+            if st.button(texto, key=f"menu_{pagina}", use_container_width=True):
+                st.session_state.pagina = pagina
                 st.session_state.menu_aberto = False
                 st.rerun()
         
         st.markdown("---")
-        
-        # Botão para fechar o menu
-        col_fechar1, col_fechar2, col_fechar3 = st.columns([1, 2, 1])
-        with col_fechar2:
-            if st.button("❌ Fechar Menu", key="fechar_menu", use_container_width=True):
-                st.session_state.menu_aberto = False
-                st.rerun()
+        if st.button("❌ Fechar Menu", key="fechar_menu", use_container_width=True):
+            st.session_state.menu_aberto = False
+            st.rerun()
         
         st.markdown('</div>', unsafe_allow_html=True)
 
-# CORREÇÃO PRINCIPAL: Lógica simplificada para o menu
-def main():
-    """Função principal que controla a renderização"""
-    
-    # Se o menu está aberto, renderiza apenas o menu
-    if st.session_state.menu_aberto:
-        renderizar_menu_principal()
-        return  # Para aqui, não renderiza o conteúdo da página
-    
-    # Se o menu não está aberto, renderiza a página normal
-    if st.session_state.pagina == "📄 Arquivos HTML":
-        renderizar_pagina_principal()
-    else:
-        renderizar_outras_paginas()
+# BOTÃO DO MENU PRINCIPAL - SEMPRE VISÍVEL
+col1, col2, col3 = st.columns([6, 1, 1])
+with col3:
+    if st.button("📋 Menu", key="abrir_menu_global"):
+        st.session_state.menu_aberto = True
+        st.rerun()
 
-def renderizar_pagina_principal():
-    """Renderiza a página principal de arquivos HTML"""
-    # Atualizar lista de arquivos
-    gerenciador_html.carregar_arquivos()
-    
-    if gerenciador_html.arquivos_html:
-        # Seletor de arquivos discreto no topo
-        if len(gerenciador_html.arquivos_html) > 1:
-            col1, col2, col3 = st.columns([2, 1, 1])
-            with col1:
+# LÓGICA PRINCIPAL SIMPLIFICADA
+if st.session_state.menu_aberto:
+    mostrar_menu_principal()
+else:
+    # PÁGINA PRINCIPAL - ARQUIVOS HTML
+    if st.session_state.pagina == "📄 Arquivos HTML":
+        st.title("📄 Relatórios HTML")
+        
+        # Atualizar lista de arquivos
+        gerenciador_html.carregar_arquivos()
+        
+        if gerenciador_html.arquivos_html:
+            if len(gerenciador_html.arquivos_html) > 1:
                 arquivo_selecionado = st.selectbox(
                     "Selecione o relatório:",
                     gerenciador_html.arquivos_html,
-                    index=0,
-                    label_visibility="collapsed"
+                    index=0
                 )
-            with col2:
-                if st.button("🔄", help="Atualizar lista", key="refresh_list"):
-                    gerenciador_html.carregar_arquivos()
-                    st.rerun()
-            with col3:
-                if st.button("📋 Menu", help="Abrir menu principal", key="open_menu"):
-                    st.session_state.menu_aberto = True
-                    st.rerun()
-        else:
-            arquivo_selecionado = gerenciador_html.arquivos_html[0]
+            else:
+                arquivo_selecionado = gerenciador_html.arquivos_html[0]
             
-            col1, col2 = st.columns([1, 1])
+            # Obter conteúdo do arquivo
+            conteudo_html = gerenciador_html.obter_conteudo_html(arquivo_selecionado)
+            
+            if conteudo_html:
+                st.markdown("---")
+                st.components.v1.html(conteudo_html, height=600, scrolling=True)
+            else:
+                st.error("❌ Não foi possível carregar o conteúdo do relatório")
+        
+        else:
+            st.info("📭 Nenhum relatório HTML encontrado. Use a página 'Gerenciar HTML' para importar relatórios.")
+    
+    # DASHBOARD
+    elif st.session_state.pagina == "📊 Dashboard":
+        st.title("📊 Dashboard de Motoristas")
+        
+        if gerenciador.dados is not None and not gerenciador.dados.empty:
+            col1, col2, col3, col4 = st.columns(4)
+            
             with col1:
-                if st.button("🔄", help="Atualizar lista", key="refresh_list_single"):
-                    gerenciador_html.carregar_arquivos()
-                    st.rerun()
-            with col2:
-                if st.button("📋 Menu", help="Abrir menu principal", key="open_menu_single"):
-                    st.session_state.menu_aberto = True
-                    st.rerun()
-        
-        # Obter e renderizar conteúdo HTML
-        conteudo_html = gerenciador_html.obter_conteudo_html(arquivo_selecionado)
-        
-        if conteudo_html:
-            st.markdown("---")
-            altura = 800
-            st.components.v1.html(conteudo_html, height=altura, scrolling=True)
+                total_motoristas = len(gerenciador.dados)
+                st.metric("Total de Motoristas", total_motoristas)
             
-            if st.session_state.mostrar_codigo_fonte:
-                with st.expander("📝 Código Fonte do Relatório", expanded=True):
-                    st.code(conteudo_html, language='html')
+            with col2:
+                ativos = len(gerenciador.dados[gerenciador.dados['status'] == 'ATIVO'])
+                st.metric("Motoristas Ativos", ativos)
+            
+            with col3:
+                com_veiculo = len(gerenciador.dados[gerenciador.dados['com-veiculo'] == 'Sim'])
+                st.metric("Com Veículo", com_veiculo)
+            
+            with col4:
+                doc_vencido = len(gerenciador.dados[gerenciador.dados['doc-vencido'] == 'Sim'])
+                st.metric("Docs Vencidos", doc_vencido)
         else:
-            st.error("❌ Não foi possível carregar o conteúdo do relatório")
+            st.info("Nenhum motorista cadastrado ainda.")
     
-    else:
-        # Tela quando não há arquivos
-        st.markdown("""
-        <div style='
-            text-align: center; 
-            padding: 60px 20px; 
-            background-color: #f8f9fa; 
-            border-radius: 10px;
-            border: 2px dashed #dee2e6;
-            margin: 40px 0;
-        '>
-            <h3 style='color: #6c757d; margin-bottom: 20px;'>📭 Nenhum Relatório Encontrado</h3>
-            <p style='color: #6c757d; font-size: 16px; margin-bottom: 30px;'>
-                Importe seu primeiro relatório HTML para visualizá-lo aqui.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        col_empty1, col_empty2, col_empty3 = st.columns([1, 2, 1])
-        
-        with col_empty2:
-            if st.button("📤 Importar Primeiro Relatório", type="primary", use_container_width=True, key="import_first"):
-                st.session_state.pagina = "🌐 Gerenciar HTML"
-                st.rerun()
-
-def renderizar_outras_paginas():
-    """Renderiza todas as outras páginas do sistema"""
-    
-    # Botão de menu para todas as outras páginas
-    if st.button("📋 Menu", key="menu_global"):
-        st.session_state.menu_aberto = True
-        st.rerun()
-    
-    # Páginas individuais
-    if st.session_state.pagina == "📊 Dashboard":
-        renderizar_dashboard()
+    # CADASTRAR MOTORISTA (exemplo - mantenha as outras páginas similares)
     elif st.session_state.pagina == "👥 Cadastrar Motorista":
-        renderizar_cadastrar_motorista()
-    elif st.session_state.pagina == "📤 Importar Excel":
-        renderizar_importar_excel()
-    elif st.session_state.pagina == "✏️ Editar Motorista":
-        renderizar_editar_motorista()
-    elif st.session_state.pagina == "🗑️ Excluir Motorista":
-        renderizar_excluir_motorista()
-    elif st.session_state.pagina == "📋 Lista Completa":
-        renderizar_lista_completa()
-    elif st.session_state.pagina == "🏢 Cadastrar Cliente":
-        renderizar_cadastrar_cliente()
-    elif st.session_state.pagina == "✏️ Editar Cliente":
-        renderizar_editar_cliente()
-    elif st.session_state.pagina == "🗑️ Excluir Cliente":
-        renderizar_excluir_cliente()
-    elif st.session_state.pagina == "📋 Lista de Clientes":
-        renderizar_lista_clientes()
-    elif st.session_state.pagina == "🌐 Gerenciar HTML":
-        renderizar_gerenciar_html()
-
-# Funções de renderização para cada página (mantenha o conteúdo original)
-def renderizar_dashboard():
-    st.title("📊 Dashboard de Motoristas")
-    
-    if st.button("← Voltar para Visualização", key="back_dashboard"):
-        st.session_state.pagina = "📄 Arquivos HTML"
-        st.rerun()
-    
-    if gerenciador.dados is not None and not gerenciador.dados.empty:
-        col1, col2, col3, col4 = st.columns(4)
+        st.title("👥 Cadastrar Novo Motorista")
         
-        with col1:
-            total_motoristas = len(gerenciador.dados)
-            st.metric("Total de Motoristas", total_motoristas)
-        
-        with col2:
-            ativos = len(gerenciador.dados[gerenciador.dados['status'] == 'ATIVO'])
-            st.metric("Motoristas Ativos", ativos)
-        
-        with col3:
-            com_veiculo = len(gerenciador.dados[gerenciador.dados['com-veiculo'] == 'Sim'])
-            st.metric("Com Veículo", com_veiculo)
-        
-        with col4:
-            doc_vencido = len(gerenciador.dados[gerenciador.dados['doc-vencido'] == 'Sim'])
-            st.metric("Docs Vencidos", doc_vencido)
-        
-        st.subheader("📈 Estatísticas")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if 'empresa' in gerenciador.dados.columns:
-                empresa_count = gerenciador.dados['empresa'].value_counts()
-                st.bar_chart(empresa_count)
-        
-        with col2:
-            if 'status' in gerenciador.dados.columns:
-                status_count = gerenciador.dados['status'].value_counts()
-                st.bar_chart(status_count)
-        
-        st.subheader("📋 Resumo dos Motoristas")
-        if not gerenciador.dados.empty:
-            dados_resumo = gerenciador.dados[COLUNAS_PRINCIPAIS]
-            st.dataframe(dados_resumo, use_container_width=True)
-    
-    else:
-        st.info("Nenhum motorista cadastrado ainda.")
-
-def renderizar_cadastrar_motorista():
-    st.title("👥 Cadastrar Novo Motorista")
-    
-    if st.button("← Voltar para Visualização", key="back_cadastrar"):
-        st.session_state.pagina = "📄 Arquivos HTML"
-        st.rerun()
-    
-    with st.form("form_cadastro"):
-        st.subheader("Informações Básicas")
-        col1, col2 = st.columns(2)
-        
-        with col1:
+        with st.form("form_cadastro"):
             nome = st.text_input("Nome completo*")
             usuario = st.text_input("Usuário*")
-            grupo = st.selectbox("Grupo*", ["Motorista"])
             empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"])
-            filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"])
-        
-        with col2:
-            status = st.selectbox("Status*", ["ATIVO", "INATIVO"])
-            categoria = st.selectbox("Categoria CNH", ["A", "B", "C", "D", "E"])
-            placa1 = st.text_input("Placa Principal")
-            placa2 = st.text_input("Placa Secundária")
-            placa3 = st.text_input("Placa Terciária")
-        
-        # ... (mantenha o resto do formulário igual)
-        
-        submitted = st.form_submit_button("💾 Cadastrar Motorista")
-        
-        if submitted:
-            if nome and usuario and empresa:
-                dados_motorista = {
-                    'nome': nome, 'usuario': usuario, 'grupo': grupo, 'empresa': empresa,
-                    'filial': filial, 'status': status, 'categoria': categoria,
-                    'placa1': placa1, 'placa2': placa2, 'placa3': placa3,
-                    # ... (complete com os outros campos)
-                }
-                
-                if gerenciador.adicionar_motorista(dados_motorista):
-                    st.success("✅ Motorista cadastrado com sucesso!")
-                    st.rerun()
+            
+            if st.form_submit_button("💾 Cadastrar Motorista"):
+                if nome and usuario and empresa:
+                    dados_motorista = {
+                        'nome': nome,
+                        'usuario': usuario,
+                        'empresa': empresa,
+                        'status': 'ATIVO'
+                    }
+                    if gerenciador.adicionar_motorista(dados_motorista):
+                        st.success("✅ Motorista cadastrado com sucesso!")
+                    else:
+                        st.error("❌ Erro ao cadastrar motorista")
                 else:
-                    st.error("❌ Erro ao cadastrar motorista")
-            else:
-                st.error("❌ Preencha os campos obrigatórios")
-
-# ... (Adicione as outras funções de renderização similares)
-
-def renderizar_gerenciar_html():
-    st.title("🌐 Gerenciar Arquivos HTML")
+                    st.error("❌ Preencha os campos obrigatórios")
     
-    if st.button("← Voltar para Visualização", key="back_gerenciar"):
-        st.session_state.pagina = "📄 Arquivos HTML"
-        st.rerun()
+    # IMPORTAR EXCEL
+    elif st.session_state.pagina == "📤 Importar Excel":
+        st.title("📤 Importar Dados do Excel")
+        
+        arquivo = st.file_uploader("Selecione o arquivo Excel", type=['xlsx', 'xls'])
+        
+        if arquivo is not None:
+            if st.button("🚀 Importar Dados"):
+                if gerenciador.importar_excel(arquivo):
+                    st.success("✅ Dados importados com sucesso!")
+                else:
+                    st.error("❌ Erro ao importar dados")
     
-    gerenciador_html.carregar_arquivos()
+    # EDITAR MOTORISTA
+    elif st.session_state.pagina == "✏️ Editar Motorista":
+        st.title("✏️ Editar Motorista")
+        
+        if gerenciador.dados is not None and not gerenciador.dados.empty:
+            motoristas = gerenciador.dados['nome'].tolist()
+            motorista_selecionado = st.selectbox("Selecione o motorista:", motoristas)
+            st.info(f"Editar: {motorista_selecionado}")
+        else:
+            st.info("Nenhum motorista cadastrado.")
     
-    col1, col2 = st.columns([2, 1])
+    # EXCLUIR MOTORISTA
+    elif st.session_state.pagina == "🗑️ Excluir Motorista":
+        st.title("🗑️ Excluir Motorista")
+        
+        if gerenciador.dados is not None and not gerenciador.dados.empty:
+            motoristas = gerenciador.dados['nome'].tolist()
+            motorista_selecionado = st.selectbox("Selecione o motorista para excluir:", motoristas)
+            
+            if st.button("🗑️ Excluir Permanentemente"):
+                idx = gerenciador.dados[gerenciador.dados['nome'] == motorista_selecionado].index[0]
+                if gerenciador.excluir_motorista(idx):
+                    st.success("✅ Motorista excluído com sucesso!")
+                    st.rerun()
+        else:
+            st.info("Nenhum motorista cadastrado.")
     
-    with col1:
-        st.subheader("📤 Importar Novo Relatório HTML")
+    # LISTA COMPLETA
+    elif st.session_state.pagina == "📋 Lista Completa":
+        st.title("📋 Lista Completa de Motoristas")
+        
+        if gerenciador.dados is not None and not gerenciador.dados.empty:
+            st.dataframe(gerenciador.dados[COLUNAS_PRINCIPAIS], use_container_width=True)
+        else:
+            st.info("Nenhum motorista cadastrado.")
+    
+    # CADASTRAR CLIENTE
+    elif st.session_state.pagina == "🏢 Cadastrar Cliente":
+        st.title("🏢 Cadastrar Cliente")
+        
+        with st.form("form_cliente"):
+            cliente = st.text_input("Código do Cliente*")
+            nome = st.text_input("Nome*")
+            
+            if st.form_submit_button("💾 Cadastrar Cliente"):
+                if cliente and nome:
+                    dados_cliente = {
+                        'cliente': cliente,
+                        'nome': nome,
+                        'status': 'ATIVO'
+                    }
+                    if gerenciador.adicionar_cliente(dados_cliente):
+                        st.success("✅ Cliente cadastrado com sucesso!")
+                    else:
+                        st.error("❌ Erro ao cadastrar cliente")
+    
+    # EDITAR CLIENTE
+    elif st.session_state.pagina == "✏️ Editar Cliente":
+        st.title("✏️ Editar Cliente")
+        
+        if gerenciador.tem_dados_clientes():
+            clientes = gerenciador.dados_clientes['nome'].tolist()
+            cliente_selecionado = st.selectbox("Selecione o cliente:", clientes)
+            st.info(f"Editar: {cliente_selecionado}")
+        else:
+            st.info("Nenhum cliente cadastrado.")
+    
+    # EXCLUIR CLIENTE
+    elif st.session_state.pagina == "🗑️ Excluir Cliente":
+        st.title("🗑️ Excluir Cliente")
+        
+        if gerenciador.tem_dados_clientes():
+            clientes = gerenciador.dados_clientes['nome'].tolist()
+            cliente_selecionado = st.selectbox("Selecione o cliente para excluir:", clientes)
+            
+            if st.button("🗑️ Excluir Permanentemente"):
+                idx = gerenciador.dados_clientes[gerenciador.dados_clientes['nome'] == cliente_selecionado].index[0]
+                if gerenciador.excluir_cliente(idx):
+                    st.success("✅ Cliente excluído com sucesso!")
+                    st.rerun()
+        else:
+            st.info("Nenhum cliente cadastrado.")
+    
+    # LISTA DE CLIENTES
+    elif st.session_state.pagina == "📋 Lista de Clientes":
+        st.title("📋 Lista de Clientes")
+        
+        if gerenciador.tem_dados_clientes():
+            st.dataframe(gerenciador.dados_clientes, use_container_width=True)
+        else:
+            st.info("Nenhum cliente cadastrado.")
+    
+    # GERENCIAR HTML
+    elif st.session_state.pagina == "🌐 Gerenciar HTML":
+        st.title("🌐 Gerenciar Arquivos HTML")
+        
+        # Upload de arquivo
         arquivo_upload = st.file_uploader("Selecione o arquivo HTML", type=['html'])
         
         if arquivo_upload is not None:
             if st.button("📥 Importar Arquivo HTML"):
-                with st.spinner("Importando arquivo..."):
-                    if gerenciador_html.importar_html(arquivo_upload):
-                        st.success("✅ Arquivo HTML importado com sucesso!")
-                        st.rerun()
-                    else:
-                        st.error("❌ Erro ao importar arquivo HTML")
-    
-    with col2:
-        st.subheader("⚙️ Ações")
-        
-        if st.button("🗑️ Limpar Pasta HTML", type="secondary"):
-            if gerenciador_html.limpar_pasta():
-                st.success("✅ Pasta HTML limpa com sucesso!")
-                st.rerun()
-            else:
-                st.error("❌ Erro ao limpar pasta HTML")
-        
-        if st.button("🔄 Atualizar Lista"):
-            gerenciador_html.carregar_arquivos()
-            st.rerun()
-    
-    st.subheader("📁 Arquivos na Pasta HTML")
-    
-    if gerenciador_html.arquivos_html:
-        for i, arquivo in enumerate(gerenciador_html.arquivos_html):
-            col_arq1, col_arq2, col_arq3 = st.columns([3, 1, 1])
-            
-            with col_arq1:
-                st.write(f"**{i+1}. {arquivo}**")
-            
-            with col_arq2:
-                if st.button("👁️ Visualizar", key=f"view_{i}"):
-                    st.session_state.pagina = "📄 Arquivos HTML"
+                if gerenciador_html.importar_html(arquivo_upload):
+                    st.success("✅ Arquivo HTML importado com sucesso!")
                     st.rerun()
-            
-            with col_arq3:
-                if st.button("🗑️ Excluir", key=f"del_{i}"):
-                    try:
-                        caminho_arquivo = os.path.join(gerenciador_html.pasta_html, arquivo)
-                        os.remove(caminho_arquivo)
-                        st.success(f"✅ Arquivo {arquivo} excluído!")
-                        gerenciador_html.carregar_arquivos()
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Erro ao excluir arquivo: {e}")
-    else:
-        st.info("📭 Nenhum arquivo HTML na pasta.")
+        
+        # Lista de arquivos
+        gerenciador_html.carregar_arquivos()
+        if gerenciador_html.arquivos_html:
+            st.subheader("Arquivos disponíveis:")
+            for arquivo in gerenciador_html.arquivos_html:
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.write(arquivo)
+                with col2:
+                    if st.button("🗑️", key=f"del_{arquivo}"):
+                        try:
+                            caminho_arquivo = os.path.join(gerenciador_html.pasta_html, arquivo)
+                            os.remove(caminho_arquivo)
+                            st.success(f"✅ {arquivo} excluído!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Erro: {e}")
+        else:
+            st.info("Nenhum arquivo HTML na pasta.")
 
-# Footer
+# FOOTER
 st.markdown("---")
-col_footer1, col_footer2, col_footer3 = st.columns(3)
-
-with col_footer1:
-    st.markdown("**Sistema de Motoristas v1.0**")
-
-with col_footer2:
-    if gerenciador.ultima_atualizacao:
-        st.markdown(f"Última atualização: {gerenciador.ultima_atualizacao.strftime('%d/%m/%Y %H:%M')}")
-
-with col_footer3:
-    if st.button("👁️ Mostrar Código Fonte", key="toggle_code"):
-        st.session_state.mostrar_codigo_fonte = not st.session_state.mostrar_codigo_fonte
-        st.rerun()
-
-# Executa a aplicação
-if __name__ == "__main__":
-    main()
+st.markdown("**Sistema de Motoristas v1.0**")
