@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 import time
 import io
 import base64
-import html
 
 # Configuração da página
 st.set_page_config(
@@ -269,7 +268,7 @@ class GerenciadorMotoristas:
             st.error(f"Erro ao obter nome por usuário: {e}")
             return ""
 
-    # MÉTODOS PARA GERENCIAMENTO DE ARQUIVOS HTML
+    # MÉTODOS SIMPLIFICADOS PARA GERENCIAMENTO DE ARQUIVOS HTML
     def carregar_html(self):
         """Carrega conteúdo HTML do arquivo"""
         try:
@@ -304,26 +303,6 @@ class GerenciadorMotoristas:
         except Exception as e:
             st.error(f"Erro ao importar arquivo HTML: {e}")
             return False
-
-    def processar_html_para_dataframe(self):
-        """Processa o HTML e converte para DataFrame usando pandas"""
-        try:
-            if not self.conteudo_html:
-                return None
-                
-            # Usa pandas para ler tabelas HTML
-            tabelas = pd.read_html(io.StringIO(self.conteudo_html))
-            
-            if tabelas:
-                # Retorna a primeira tabela encontrada
-                return tabelas[0]
-            else:
-                st.warning("Nenhuma tabela encontrada no HTML")
-                return None
-                
-        except Exception as e:
-            st.error(f"Erro ao processar HTML: {e}")
-            return None
 
 # Inicialização do gerenciador
 @st.cache_resource
@@ -1184,29 +1163,7 @@ elif pagina == "📈 Relatório CGS":
             # Importa o arquivo HTML
             if gerenciador.importar_html(arquivo_html):
                 st.success("✅ Arquivo HTML importado com sucesso!")
-                
-                # Processa o HTML para DataFrame
-                df_html = gerenciador.processar_html_para_dataframe()
-                if df_html is not None:
-                    st.subheader("📊 Dados do Relatório HTML")
-                    st.dataframe(df_html, use_container_width=True)
-                    
-                    # Mostra estatísticas básicas
-                    st.subheader("📈 Estatísticas do Relatório")
-                    col1, col2, col3 = st.columns(3)
-                    
-                    with col1:
-                        st.metric("Total de Registros", len(df_html))
-                    
-                    with col2:
-                        st.metric("Total de Colunas", len(df_html.columns))
-                    
-                    with col3:
-                        # Exemplo de métrica específica - ajuste conforme sua estrutura
-                        if len(df_html.columns) > 0:
-                            primeira_coluna = df_html.columns[0]
-                            valores_unicos = df_html[primeira_coluna].nunique()
-                            st.metric(f"Valores Únicos em {primeira_coluna}", valores_unicos)
+                st.rerun()
             else:
                 st.error("❌ Erro ao importar arquivo HTML")
                 
@@ -1224,27 +1181,13 @@ elif pagina == "📈 Relatório CGS":
             # Mostra o código HTML
             st.text_area("Código HTML", gerenciador.conteudo_html, height=400)
         
-        # Botão para processar e converter para DataFrame
-        if st.button("🔄 Processar HTML para Tabela"):
-            df_html = gerenciador.processar_html_para_dataframe()
-            if df_html is not None:
-                st.subheader("📊 Tabela Processada do HTML")
-                st.dataframe(df_html, use_container_width=True)
-                
-                # Opção para exportar a tabela processada
-                if not df_html.empty:
-                    buffer = io.BytesIO()
-                    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-                        df_html.to_excel(writer, sheet_name='relatorio_cgs', index=False)
-                    
-                    st.download_button(
-                        label="📥 Baixar Tabela como Excel",
-                        data=buffer.getvalue(),
-                        file_name="relatorio_cgs_processado.xlsx",
-                        mime="application/vnd.ms-excel"
-                    )
-            else:
-                st.warning("Não foi possível processar o HTML para tabela")
+        # Botão para download do HTML
+        st.download_button(
+            label="📥 Baixar Arquivo HTML",
+            data=gerenciador.conteudo_html,
+            file_name="relatorio_cgs.html",
+            mime="text/html"
+        )
     else:
         st.info("Nenhum arquivo HTML carregado. Use a opção de importação acima.")
 
