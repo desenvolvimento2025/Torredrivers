@@ -14,7 +14,8 @@ from pathlib import Path
 st.set_page_config(
     page_title="Sistema de Motoristas",
     page_icon="🚗",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"  # Sidebar colapsado por padrão
 )
 
 # ESTRUTURA ATUALIZADA COM NOMES EXATOS DO TEMPLATE
@@ -355,20 +356,6 @@ gerenciador = get_gerenciador()
 if 'pagina' not in st.session_state:
     st.session_state.pagina = "📄 Arquivos HTML"
 
-# Sidebar para navegação
-st.sidebar.title("🚗 Sistema de Motoristas")
-pagina = st.sidebar.selectbox(
-    "Navegação",
-    ["📄 Arquivos HTML", "📊 Dashboard", "👥 Cadastrar Motorista", "📤 Importar Excel", "✏️ Editar Motorista", "🗑️ Excluir Motorista", "📋 Lista Completa", 
-     "🏢 Cadastrar Cliente", "✏️ Editar Cliente", "🗑️ Excluir Cliente", "📋 Lista de Clientes",
-     "🌐 Gerenciar HTML"]
-)
-
-# Verificar se há redirecionamento por arquivo específico do sidebar
-if 'arquivo_sidebar' in st.session_state and st.session_state.arquivo_sidebar:
-    st.session_state.arquivo_selecionado = st.session_state.arquivo_sidebar
-    del st.session_state.arquivo_sidebar
-
 # Auto-atualização a cada 1 hora
 if 'ultima_atualizacao' not in st.session_state:
     st.session_state.ultima_atualizacao = datetime.now()
@@ -397,62 +384,160 @@ def obter_valores_unicos(coluna, dados):
     except Exception:
         return []
 
-# Página: Arquivos HTML (NOVA PÁGINA PRINCIPAL SIMPLIFICADA)
-if pagina == "📄 Arquivos HTML":
+# CSS para esconder elementos do Streamlit
+hide_streamlit_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+</style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
+# Botão flutuante para menu
+st.markdown("""
+<style>
+.floating-menu {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Menu flutuante
+with st.sidebar:
+    st.title("🚗 Sistema de Motoristas")
+    
+    # Botão para expandir/recolher menu
+    if st.button("📋 Menu Principal"):
+        st.session_state.menu_expandido = not st.session_state.get('menu_expandido', False)
+    
+    if st.session_state.get('menu_expandido', False):
+        pagina = st.selectbox(
+            "Navegação",
+            ["📄 Arquivos HTML", "📊 Dashboard", "👥 Cadastrar Motorista", "📤 Importar Excel", "✏️ Editar Motorista", "🗑️ Excluir Motorista", "📋 Lista Completa", 
+             "🏢 Cadastrar Cliente", "✏️ Editar Cliente", "🗑️ Excluir Cliente", "📋 Lista de Clientes",
+             "🌐 Gerenciar HTML"],
+            key="nav_select"
+        )
+        
+        # Informações de atualização
+        st.markdown("---")
+        st.subheader("🔄 Atualização")
+        if gerenciador.ultima_atualizacao:
+            st.write(f"Última atualização: {gerenciador.ultima_atualizacao.strftime('%d/%m/%Y %H:%M')}")
+
+        if st.button("🔄 Atualizar Agora"):
+            gerenciador.carregar_dados()
+            st.session_state.ultima_atualizacao = datetime.now()
+            st.rerun()
+
+        # Seção de Arquivos HTML
+        st.markdown("---")
+        st.subheader("🌐 Arquivos HTML")
+
+        gerenciador_html.carregar_arquivos()
+        if gerenciador_html.arquivos_html:
+            st.success(f"📁 {len(gerenciador_html.arquivos_html)} arquivo(s)")
+            
+            # Mostrar apenas os primeiros 3 arquivos para não poluir
+            for i, arquivo in enumerate(gerenciador_html.arquivos_html[:3]):
+                if st.button(f"📄 {arquivo}", key=f"sidebar_{i}"):
+                    st.session_state.pagina = "📄 Arquivos HTML"
+                    st.session_state.arquivo_sidebar = arquivo
+                    st.rerun()
+            
+            if len(gerenciador_html.arquivos_html) > 3:
+                st.info(f"... e mais {len(gerenciador_html.arquivos_html) - 3} arquivos")
+        else:
+            st.info("📭 Nenhum arquivo")
+
+        st.markdown("---")
+        st.info("Sistema atualizado automaticamente a cada 1 hora")
+
+# Página: Arquivos HTML (PÁGINA PRINCIPAL - TELA CHEIA)
+if st.session_state.pagina == "📄 Arquivos HTML":
     # Atualizar lista de arquivos
     gerenciador_html.carregar_arquivos()
     
     if gerenciador_html.arquivos_html:
-        # Seletor de arquivos discreto no topo
+        # Seletor de arquivos discreto no topo (apenas se houver múltiplos arquivos)
         if len(gerenciador_html.arquivos_html) > 1:
-            arquivo_selecionado = st.selectbox(
-                "Selecione o relatório:",
-                gerenciador_html.arquivos_html,
-                index=0,
-                label_visibility="collapsed"
-            )
+            col1, col2, col3 = st.columns([2, 1, 1])
+            with col1:
+                arquivo_selecionado = st.selectbox(
+                    "Selecione o relatório:",
+                    gerenciador_html.arquivos_html,
+                    index=0,
+                    label_visibility="collapsed"
+                )
+            with col2:
+                # Botão para atualizar lista
+                if st.button("🔄", help="Atualizar lista"):
+                    gerenciador_html.carregar_arquivos()
+                    st.rerun()
+            with col3:
+                # Botão para menu
+                if st.button("📋 Menu", help="Abrir menu principal"):
+                    st.session_state.menu_expandido = True
+                    st.rerun()
         else:
             arquivo_selecionado = gerenciador_html.arquivos_html[0]
-        
-        # Botões de ação compactos em uma linha
-        col1, col2, col3, col4 = st.columns([1, 1, 1, 7])
-        
-        with col1:
-            # Download do arquivo
-            conteudo_html = gerenciador_html.obter_conteudo_html(arquivo_selecionado)
-            if conteudo_html:
-                st.download_button(
-                    label="📥",
-                    data=conteudo_html,
-                    file_name=arquivo_selecionado,
-                    mime="text/html",
-                    help="Baixar arquivo HTML"
-                )
-        
-        with col2:
-            # Ver código fonte
-            if st.button("📝", help="Ver código fonte"):
-                st.session_state.mostrar_codigo_fonte = not st.session_state.get('mostrar_codigo_fonte', False)
-                st.rerun()
-        
-        with col3:
-            # Atualizar lista
-            if st.button("🔄", help="Atualizar lista"):
-                gerenciador_html.carregar_arquivos()
-                st.rerun()
-        
-        with col4:
-            st.write(f"**Visualizando:** {arquivo_selecionado}")
+            
+            # Botões de ação em uma linha
+            col1, col2, col3 = st.columns([1, 1, 1])
+            with col1:
+                if st.button("🔄", help="Atualizar lista"):
+                    gerenciador_html.carregar_arquivos()
+                    st.rerun()
+            with col2:
+                if st.button("📋 Menu", help="Abrir menu principal"):
+                    st.session_state.menu_expandido = True
+                    st.rerun()
+            with col3:
+                st.write(f"**Visualizando:** {arquivo_selecionado}")
         
         # Obter conteúdo do arquivo
         conteudo_html = gerenciador_html.obter_conteudo_html(arquivo_selecionado)
         
         if conteudo_html:
+            # Botões de ação flutuantes
+            col_actions1, col_actions2, col_actions3 = st.columns([1, 1, 1])
+            
+            with col_actions1:
+                # Download do arquivo
+                st.download_button(
+                    label="📥 Baixar",
+                    data=conteudo_html,
+                    file_name=arquivo_selecionado,
+                    mime="text/html",
+                    use_container_width=True
+                )
+            
+            with col_actions2:
+                # Ver código fonte
+                if st.button("📝 Código Fonte", use_container_width=True):
+                    st.session_state.mostrar_codigo_fonte = not st.session_state.get('mostrar_codigo_fonte', False)
+                    st.rerun()
+            
+            with col_actions3:
+                # Navegar para gerenciador
+                if st.button("⚙️ Gerenciar", use_container_width=True):
+                    st.session_state.pagina = "🌐 Gerenciar HTML"
+                    st.rerun()
+            
             # Renderizar HTML em tela cheia
             st.markdown("---")
             
-            # Altura máxima para tela cheia
-            altura = 800
+            # Altura máxima para tela cheia (calculada dinamicamente)
+            altura = 750
             
             # Renderizar HTML diretamente em tela cheia
             st.components.v1.html(conteudo_html, height=altura, scrolling=True)
@@ -491,7 +576,7 @@ if pagina == "📄 Arquivos HTML":
                 st.rerun()
 
 # Página: Dashboard
-elif pagina == "📊 Dashboard":
+elif st.session_state.pagina == "📊 Dashboard":
     st.title("📊 Dashboard de Motoristas")
     
     if gerenciador.dados is not None and not gerenciador.dados.empty:
@@ -537,7 +622,7 @@ elif pagina == "📊 Dashboard":
         st.info("Nenhum motorista cadastrado ainda.")
 
 # Página: Cadastrar Motorista
-elif pagina == "👥 Cadastrar Motorista":
+elif st.session_state.pagina == "👥 Cadastrar Motorista":
     st.title("👥 Cadastrar Novo Motorista")
     
     with st.form("form_cadastro"):
@@ -664,7 +749,7 @@ elif pagina == "👥 Cadastrar Motorista":
                 st.warning("⚠️ Preencha os campos obrigatórios (Nome, Usuário, Empresa)")
 
 # Página: Importar Excel
-elif pagina == "📤 Importar Excel":
+elif st.session_state.pagina == "📤 Importar Excel":
     st.title("📤 Importar Dados via Excel")
     
     st.markdown("""
@@ -809,7 +894,7 @@ elif pagina == "📤 Importar Excel":
             st.info("💡 **Dica:** Verifique se o arquivo está no formato correto e contém as colunas obrigatórias.")
 
 # Página: Editar Motorista
-elif pagina == "✏️ Editar Motorista":
+elif st.session_state.pagina == "✏️ Editar Motorista":
     st.title("✏️ Editar Motorista")
     
     if gerenciador.dados is not None and not gerenciador.dados.empty:
@@ -927,7 +1012,7 @@ elif pagina == "✏️ Editar Motorista":
         st.info("Nenhum motorista cadastrado para editar.")
 
 # Página: Excluir Motorista
-elif pagina == "🗑️ Excluir Motorista":
+elif st.session_state.pagina == "🗑️ Excluir Motorista":
     st.title("🗑️ Excluir Motorista")
     
     if gerenciador.dados is not None and not gerenciador.dados.empty:
@@ -973,7 +1058,7 @@ elif pagina == "🗑️ Excluir Motorista":
         st.info("Nenhum motorista cadastrado para excluir.")
 
 # Página: Lista Completa
-elif pagina == "📋 Lista Completa":
+elif st.session_state.pagina == "📋 Lista Completa":
     st.title("📋 Lista Completa de Motoristas")
     
     if gerenciador.dados is not None and not gerenciador.dados.empty:
@@ -1250,7 +1335,7 @@ elif pagina == "📋 Lista Completa":
         st.info("Nenhum motorista cadastrado.")
 
 # PÁGINAS PARA CLIENTES
-elif pagina == "🏢 Cadastrar Cliente":
+elif st.session_state.pagina == "🏢 Cadastrar Cliente":
     st.title("🏢 Cadastrar Novo Cliente")
     
     # Garante que os dados estão carregados
@@ -1322,7 +1407,7 @@ elif pagina == "🏢 Cadastrar Cliente":
         st.info("Vá para a página '👥 Cadastrar Motorista' para adicionar motoristas primeiro.")
 
 # Página: Editar Cliente
-elif pagina == "✏️ Editar Cliente":
+elif st.session_state.pagina == "✏️ Editar Cliente":
     st.title("✏️ Editar Cliente")
     
     # Garante que os dados estão carregados
@@ -1408,7 +1493,7 @@ elif pagina == "✏️ Editar Cliente":
         st.warning("⚠️ Não há motoristas ou clientes cadastrados.")
 
 # Página: Excluir Cliente
-elif pagina == "🗑️ Excluir Cliente":
+elif st.session_state.pagina == "🗑️ Excluir Cliente":
     st.title("🗑️ Excluir Cliente")
     
     if gerenciador.tem_dados_clientes():
@@ -1443,7 +1528,7 @@ elif pagina == "🗑️ Excluir Cliente":
         st.info("Nenhum cliente cadastrado.")
 
 # Página: Lista de Clientes
-elif pagina == "📋 Lista de Clientes":
+elif st.session_state.pagina == "📋 Lista de Clientes":
     st.title("📋 Lista de Clientes")
     
     if gerenciador.tem_dados_clientes():
@@ -1498,7 +1583,7 @@ elif pagina == "📋 Lista de Clientes":
         st.info("Nenhum cliente cadastrado.")
 
 # Página: Gerenciar HTML
-elif pagina == "🌐 Gerenciar HTML":
+elif st.session_state.pagina == "🌐 Gerenciar HTML":
     st.title("🌐 Gerenciador de Arquivos HTML")
     
     # Criar abas para organização
@@ -1673,49 +1758,3 @@ elif pagina == "🌐 Gerenciar HTML":
             if st.button("🏠 Voltar ao Início", use_container_width=True):
                 st.session_state.pagina = "📄 Arquivos HTML"
                 st.rerun()
-
-# Informações de atualização no sidebar
-st.sidebar.markdown("---")
-st.sidebar.subheader("🔄 Atualização")
-if gerenciador.ultima_atualizacao:
-    st.sidebar.write(f"Última atualização: {gerenciador.ultima_atualizacao.strftime('%d/%m/%Y %H:%M')}")
-
-if st.sidebar.button("🔄 Atualizar Agora"):
-    gerenciador.carregar_dados()
-    st.session_state.ultima_atualizacao = datetime.now()
-    st.rerun()
-
-# Seção de Arquivos HTML no Sidebar
-st.sidebar.markdown("---")
-st.sidebar.subheader("🌐 Arquivos HTML")
-
-if gerenciador_html.arquivos_html:
-    st.sidebar.success(f"📁 {len(gerenciador_html.arquivos_html)} arquivo(s)")
-    
-    # Mostrar apenas os primeiros 3 arquivos para não poluir
-    for i, arquivo in enumerate(gerenciador_html.arquivos_html[:3]):
-        if st.sidebar.button(f"📄 {arquivo}", key=f"sidebar_{i}"):
-            st.session_state.pagina = "📄 Arquivos HTML"
-            st.session_state.arquivo_sidebar = arquivo
-            st.rerun()
-    
-    if len(gerenciador_html.arquivos_html) > 3:
-        st.sidebar.info(f"... e mais {len(gerenciador_html.arquivos_html) - 3} arquivos")
-else:
-    st.sidebar.info("📭 Nenhum arquivo")
-
-# Botões de ação rápida no sidebar
-col_sidebar1, col_sidebar2 = st.sidebar.columns(2)
-
-with col_sidebar1:
-    if st.button("👁️ Visualizar", use_container_width=True):
-        st.session_state.pagina = "📄 Arquivos HTML"
-        st.rerun()
-
-with col_sidebar2:
-    if st.button("⚙️ Gerenciar", use_container_width=True):
-        st.session_state.pagina = "🌐 Gerenciar HTML"
-        st.rerun()
-
-st.sidebar.markdown("---")
-st.sidebar.info("Sistema atualizado automaticamente a cada 1 hora")
