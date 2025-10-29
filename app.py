@@ -8,7 +8,6 @@ import time
 import io
 import base64
 import html
-from bs4 import BeautifulSoup
 
 # Configuração da página
 st.set_page_config(
@@ -307,35 +306,19 @@ class GerenciadorMotoristas:
             return False
 
     def processar_html_para_dataframe(self):
-        """Processa o HTML e converte para DataFrame"""
+        """Processa o HTML e converte para DataFrame usando pandas"""
         try:
             if not self.conteudo_html:
                 return None
                 
-            # Usa BeautifulSoup para parsear o HTML
-            soup = BeautifulSoup(self.conteudo_html, 'html.parser')
+            # Usa pandas para ler tabelas HTML
+            tabelas = pd.read_html(io.StringIO(self.conteudo_html))
             
-            # Encontra a tabela
-            table = soup.find('table')
-            if not table:
-                st.warning("Nenhuma tabela encontrada no HTML")
-                return None
-            
-            # Extrai os dados da tabela
-            rows = table.find_all('tr')
-            data = []
-            
-            for row in rows:
-                cols = row.find_all(['td', 'th'])
-                cols = [col.get_text(strip=True) for col in cols]
-                data.append(cols)
-            
-            # Converte para DataFrame
-            if len(data) > 1:
-                df = pd.DataFrame(data[1:], columns=data[0])
-                return df
+            if tabelas:
+                # Retorna a primeira tabela encontrada
+                return tabelas[0]
             else:
-                st.warning("Tabela vazia ou sem dados")
+                st.warning("Nenhuma tabela encontrada no HTML")
                 return None
                 
         except Exception as e:
