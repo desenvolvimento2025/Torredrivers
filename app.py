@@ -1,271 +1,179 @@
-class GerenciadorMotoristas:
-    def __init__(self):
-        self.motoristas = []
-        self.usuarios_motoristas = {
-            'motorista1': {'senha': 'senha123', 'cpf': '123.456.789-00'},
-            'admin': {'senha': 'admin123', 'cpf': '111.222.333-44'},
-            'driver': {'senha': 'driver123', 'cpf': '555.666.777-88'}
-        }
-    
-    def validar_usuario_motorista(self, usuario, senha):
-        """Valida as credenciais de um motorista"""
-        if usuario in self.usuarios_motoristas:
-            if self.usuarios_motoristas[usuario]['senha'] == senha:
-                return True
-        return False
-    
-    def cadastrar_motorista(self, nome, cpf, email, telefone, veiculo, usuario=None, senha=None):
-        """Cadastra um novo motorista"""
-        # Verificar se CPF já existe
-        for motorista in self.motoristas:
-            if motorista['cpf'] == cpf:
-                raise ValueError("CPF já cadastrado")
-        
-        motorista = {
-            'nome': nome,
-            'cpf': cpf,
-            'email': email,
-            'telefone': telefone,
-            'veiculo': veiculo,
-            'ativo': True
-        }
-        
-        self.motoristas.append(motorista)
-        
-        # Criar usuário de acesso se fornecido
-        if usuario and senha:
-            self.usuarios_motoristas[usuario] = {
-                'senha': senha,
-                'cpf': cpf
-            }
-        
-        return motorista
-    
-    def buscar_motorista_por_cpf(self, cpf):
-        """Busca motorista pelo CPF"""
-        for motorista in self.motoristas:
-            if motorista['cpf'] == cpf:
-                return motorista
-        return None
-    
-    def buscar_motorista_por_usuario(self, usuario):
-        """Busca motorista pelo usuário"""
-        if usuario in self.usuarios_motoristas:
-            cpf = self.usuarios_motoristas[usuario]['cpf']
-            return self.buscar_motorista_por_cpf(cpf)
-        return None
-    
-    def listar_motoristas(self, apenas_ativos=True):
-        """Retorna lista de motoristas"""
-        if apenas_ativos:
-            return [m for m in self.motoristas if m['ativo']]
-        return self.motoristas
-    
-    def desativar_motorista(self, cpf):
-        """Desativa um motorista pelo CPF"""
-        motorista = self.buscar_motorista_por_cpf(cpf)
-        if motorista:
-            motorista['ativo'] = False
-            return True
-        return False
-    
-    def ativar_motorista(self, cpf):
-        """Ativa um motorista pelo CPF"""
-        motorista = self.buscar_motorista_por_cpf(cpf)
-        if motorista:
-            motorista['ativo'] = True
-            return True
-        return False
-    
-    def editar_motorista(self, cpf, **kwargs):
-        """Edita informações de um motorista"""
-        motorista = self.buscar_motorista_por_cpf(cpf)
-        if motorista:
-            for key, value in kwargs.items():
-                if key in motorista and key != 'cpf':  # CPF não pode ser alterado
-                    motorista[key] = value
-            return True
-        return False
-    
-    def criar_usuario_motorista(self, usuario, senha, cpf):
-        """Cria usuário de acesso para motorista existente"""
-        motorista = self.buscar_motorista_por_cpf(cpf)
-        if not motorista:
-            raise ValueError("Motorista não encontrado")
-        
-        if usuario in self.usuarios_motoristas:
-            raise ValueError("Usuário já existe")
-        
-        self.usuarios_motoristas[usuario] = {
-            'senha': senha,
-            'cpf': cpf
-        }
-        return True
+# app.py - CÓDIGO COMPLETO PARA STREAMLIT CLOUD
+import streamlit as st
+import pandas as pd
+import sqlite3
+from datetime import datetime
 
+# Configuração da página
+st.set_page_config(
+    page_title="Organograma Motoristas Online",
+    page_icon="🚚",
+    layout="wide"
+)
 
-class SistemaTransporte:
-    def __init__(self):
-        self.gerenciador_motoristas = GerenciadorMotoristas()
-    
-    def menu_principal(self):
-        """Menu principal do sistema"""
-        while True:
-            print("\n=== SISTEMA DE TRANSPORTE ===")
-            print("1. Login Motorista")
-            print("2. Cadastrar Motorista")
-            print("3. Listar Motoristas")
-            print("4. Sair")
-            
-            opcao = input("Escolha uma opção: ")
-            
-            if opcao == '1':
-                self.login_motorista()
-            elif opcao == '2':
-                self.cadastrar_motorista()
-            elif opcao == '3':
-                self.listar_motoristas()
-            elif opcao == '4':
-                print("Saindo do sistema...")
-                break
-            else:
-                print("Opção inválida!")
-    
-    def login_motorista(self):
-        """Interface de login para motoristas"""
-        print("\n--- LOGIN MOTORISTA ---")
-        usuario = input("Usuário: ")
-        senha = input("Senha: ")
-        
-        try:
-            if self.gerenciador_motoristas.validar_usuario_motorista(usuario, senha):
-                motorista = self.gerenciador_motoristas.buscar_motorista_por_usuario(usuario)
-                if motorista:
-                    print(f"\nLogin bem-sucedido! Bem-vindo, {motorista['nome']}!")
-                    self.menu_motorista(motorista)
-                else:
-                    print("Motorista não encontrado!")
-            else:
-                print("Usuário ou senha inválidos!")
-        except Exception as e:
-            print(f"Erro durante validação: {e}")
-    
-    def cadastrar_motorista(self):
-        """Interface para cadastrar novo motorista"""
-        print("\n--- CADASTRAR MOTORISTA ---")
-        nome = input("Nome completo: ")
-        cpf = input("CPF: ")
-        email = input("E-mail: ")
-        telefone = input("Telefone: ")
-        veiculo = input("Veículo (placa): ")
-        
-        criar_usuario = input("Deseja criar usuário de acesso? (s/n): ").lower()
-        usuario = None
-        senha = None
-        
-        if criar_usuario == 's':
-            usuario = input("Usuário: ")
-            senha = input("Senha: ")
-        
-        try:
-            motorista = self.gerenciador_motoristas.cadastrar_motorista(
-                nome, cpf, email, telefone, veiculo, usuario, senha
-            )
-            print(f"\nMotorista {motorista['nome']} cadastrado com sucesso!")
-        except ValueError as e:
-            print(f"Erro ao cadastrar: {e}")
-        except Exception as e:
-            print(f"Erro inesperado: {e}")
-    
-    def listar_motoristas(self):
-        """Lista todos os motoristas"""
-        print("\n--- LISTA DE MOTORISTAS ---")
-        motoristas = self.gerenciador_motoristas.listar_motoristas()
-        
-        if not motoristas:
-            print("Nenhum motorista cadastrado.")
-            return
-        
-        for i, motorista in enumerate(motoristas, 1):
-            status = "Ativo" if motorista['ativo'] else "Inativo"
-            print(f"{i}. {motorista['nome']} - CPF: {motorista['cpf']} - Status: {status}")
-            print(f"   Veículo: {motorista['veiculo']} - Tel: {motorista['telefone']}")
-            print(f"   E-mail: {motorista['email']}")
-            print()
-    
-    def menu_motorista(self, motorista):
-        """Menu do motorista após login"""
-        while True:
-            print(f"\n--- MENU MOTORISTA - {motorista['nome']} ---")
-            print("1. Ver meus dados")
-            print("2. Editar dados")
-            print("3. Voltar ao menu principal")
-            
-            opcao = input("Escolha uma opção: ")
-            
-            if opcao == '1':
-                self.ver_dados_motorista(motorista)
-            elif opcao == '2':
-                self.editar_dados_motorista(motorista)
-            elif opcao == '3':
-                break
-            else:
-                print("Opção inválida!")
-    
-    def ver_dados_motorista(self, motorista):
-        """Exibe dados do motorista"""
-        print("\n--- MEUS DADOS ---")
-        print(f"Nome: {motorista['nome']}")
-        print(f"CPF: {motorista['cpf']}")
-        print(f"E-mail: {motorista['email']}")
-        print(f"Telefone: {motorista['telefone']}")
-        print(f"Veículo: {motorista['veiculo']}")
-        print(f"Status: {'Ativo' if motorista['ativo'] else 'Inativo'}")
-    
-    def editar_dados_motorista(self, motorista):
-        """Permite editar dados do motorista"""
-        print("\n--- EDITAR DADOS ---")
-        print("Deixe em branco para manter o valor atual")
-        
-        novo_email = input(f"Novo e-mail [{motorista['email']}]: ")
-        novo_telefone = input(f"Novo telefone [{motorista['telefone']}]: ")
-        novo_veiculo = input(f"Novo veículo [{motorista['veiculo']}]: ")
-        
-        updates = {}
-        if novo_email:
-            updates['email'] = novo_email
-        if novo_telefone:
-            updates['telefone'] = novo_telefone
-        if novo_veiculo:
-            updates['veiculo'] = novo_veiculo
-        
-        if updates:
-            if self.gerenciador_motoristas.editar_motorista(motorista['cpf'], **updates):
-                print("Dados atualizados com sucesso!")
-            else:
-                print("Erro ao atualizar dados!")
-        else:
-            print("Nenhuma alteração realizada.")
+# CSS personalizado
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 2.5rem;
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .card {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin: 10px 0;
+        border-left: 4px solid #3498db;
+    }
+</style>
+""", unsafe_allow_html=True)
 
+# Título principal
+st.markdown('<div class="main-header">🚚 ORGANOGRAMA DE MOTORISTAS ONLINE</div>', unsafe_allow_html=True)
+st.success("✅ **Sistema funcionando na nuvem!**")
 
-# Função principal
+# Inicializar banco de dados
+def init_database():
+    conn = sqlite3.connect('motoristas.db')
+    
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS motoristas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            situacao TEXT NOT NULL,
+            status_trabalho TEXT,
+            estado_motorista TEXT,
+            categoria_cnh TEXT,
+            localizacao TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Dados de exemplo
+    motoristas_exemplo = [
+        ('João Silva', 'TRABALHANDO', 'C/ATEND', 'DIRIGINDO', 'D', 'Base Centro'),
+        ('Maria Santos', 'INTERJORNADA', 'S/ATEND', 'PARADO', 'E', 'Casa'),
+        ('Pedro Oliveira', 'TRABALHANDO', 'C/VEICULO', 'Parado até 1h', 'C', 'Base Norte'),
+        ('Ana Costa', 'TRABALHANDO', 'S/VEICULO', 'DIRIGINDO', 'B', 'Base Sul')
+    ]
+    
+    cursor = conn.cursor()
+    cursor.executemany('''
+        INSERT OR IGNORE INTO motoristas (nome, situacao, status_trabalho, estado_motorista, categoria_cnh, localizacao)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', motoristas_exemplo)
+    
+    conn.commit()
+    return conn
+
+# Interface principal
 def main():
-    sistema = SistemaTransporte()
+    conn = init_database()
     
-    # Cadastrar alguns motoristas de exemplo
-    try:
-        sistema.gerenciador_motoristas.cadastrar_motorista(
-            "João Silva", "123.456.789-00", "joao@email.com", 
-            "(11) 99999-9999", "ABC-1234", "motorista1", "senha123"
-        )
-        sistema.gerenciador_motoristas.cadastrar_motorista(
-            "Maria Santos", "111.222.333-44", "maria@email.com",
-            "(11) 88888-8888", "XYZ-5678", "admin", "admin123"
-        )
-    except ValueError:
-        pass  # Motoristas já cadastrados
+    # Menu lateral
+    st.sidebar.title("🎛️ Menu")
+    opcao = st.sidebar.radio(
+        "Navegação:",
+        ["📊 Dashboard", "➕ Adicionar Motorista", "📈 Estatísticas"]
+    )
     
-    sistema.menu_principal()
+    # Filtro
+    filtro_situacao = st.sidebar.selectbox(
+        "Filtrar por situação:",
+        ["TODOS", "TRABALHANDO", "INTERJORNADA"]
+    )
+    
+    if opcao == "📊 Dashboard":
+        mostrar_dashboard(conn, filtro_situacao)
+    elif opcao == "➕ Adicionar Motorista":
+        adicionar_motorista(conn)
+    elif opcao == "📈 Estatísticas":
+        mostrar_estatisticas(conn)
 
+def mostrar_dashboard(conn, filtro):
+    st.header("📊 Dashboard de Motoristas")
+    
+    # Buscar dados
+    query = "SELECT * FROM motoristas"
+    if filtro != "TODOS":
+        query += f" WHERE situacao = '{filtro}'"
+    
+    df_motoristas = pd.read_sql(query, conn)
+    
+    # Mostrar cards
+    for _, motorista in df_motoristas.iterrows():
+        cor = "#2ecc71" if motorista['situacao'] == 'TRABALHANDO' else "#3498db"
+        
+        st.markdown(f"""
+        <div class="card" style="border-left-color: {cor}">
+            <h3>🚗 {motorista['nome']}</h3>
+            <strong>Situação:</strong> {motorista['situacao']} | 
+            <strong>Status:</strong> {motorista['status_trabalho']}<br>
+            <strong>Estado:</strong> {motorista['estado_motorista']} | 
+            <strong>CNH:</strong> {motorista['categoria_cnh']}<br>
+            <strong>Localização:</strong> {motorista['localizacao']}
+        </div>
+        """, unsafe_allow_html=True)
 
-if __name__ == "__main__":
+def adicionar_motorista(conn):
+    st.header("➕ Adicionar Novo Motorista")
+    
+    with st.form("form_motorista"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            nome = st.text_input("Nome completo")
+            situacao = st.selectbox("Situação", ["TRABALHANDO", "INTERJORNADA"])
+            status_trabalho = st.selectbox("Status", ["C/ATEND", "S/ATEND", "C/VEICULO", "S/VEICULO"])
+        
+        with col2:
+            estado = st.selectbox("Estado", ["DIRIGINDO", "PARADO", "Parado até 1h", "Parado até 2h"])
+            categoria_cnh = st.selectbox("CNH", ["A", "B", "C", "D", "E"])
+            localizacao = st.text_input("Localização")
+        
+        if st.form_submit_button("💾 Salvar Motorista"):
+            if nome:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO motoristas (nome, situacao, status_trabalho, estado_motorista, categoria_cnh, localizacao)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (nome, situacao, status_trabalho, estado, categoria_cnh, localizacao))
+                conn.commit()
+                st.success(f"✅ Motorista {nome} adicionado com sucesso!")
+            else:
+                st.error("❌ Preencha o nome do motorista")
+
+def mostrar_estatisticas(conn):
+    st.header("📈 Estatísticas")
+    
+    df_motoristas = pd.read_sql("SELECT * FROM motoristas", conn)
+    
+    if not df_motoristas.empty:
+        col1, col2, col3, col4 = st.columns(4)
+        
+        total = len(df_motoristas)
+        trabalhando = len(df_motoristas[df_motoristas['situacao'] == 'TRABALHANDO'])
+        interjornada = len(df_motoristas[df_motoristas['situacao'] == 'INTERJORNADA'])
+        
+        col1.metric("Total Motoristas", total)
+        col2.metric("Trabalhando", trabalhando)
+        col3.metric("Interjornada", interjornada)
+        col4.metric("Disponibilidade", f"{(trabalhando/total*100):.1f}%")
+        
+        # Gráfico de distribuição
+        st.subheader("📊 Distribuição por Situação")
+        dist_situacao = df_motoristas['situacao'].value_counts()
+        st.bar_chart(dist_situacao)
+        
+        # Gráfico de CNH
+        st.subheader("🚦 Distribuição por Categoria CNH")
+        dist_cnh = df_motoristas['categoria_cnh'].value_counts()
+        st.bar_chart(dist_cnh)
+    else:
+        st.warning("Nenhum motorista cadastrado.")
+
+if __name__ == '__main__':
     main()
