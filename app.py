@@ -352,7 +352,7 @@ def get_gerenciador():
 
 gerenciador = get_gerenciador()
 
-# Inicialização da sessão
+# Inicialização da sessão - CORREÇÃO AQUI
 if 'pagina' not in st.session_state:
     st.session_state.pagina = "📄 Arquivos HTML"
 
@@ -551,12 +551,12 @@ def renderizar_menu_principal():
         
         st.markdown('</div>', unsafe_allow_html=True)
 
+# CORREÇÃO PRINCIPAL: Renderizar o menu primeiro se estiver aberto
+if st.session_state.menu_aberto:
+    renderizar_menu_principal()
+
 # Página: Arquivos HTML (PÁGINA PRINCIPAL - TELA CHEIA)
 if st.session_state.pagina == "📄 Arquivos HTML":
-    # Mostrar menu se estiver aberto
-    if st.session_state.menu_aberto:
-        renderizar_menu_principal()
-    
     # Atualizar lista de arquivos
     gerenciador_html.carregar_arquivos()
     
@@ -577,7 +577,7 @@ if st.session_state.pagina == "📄 Arquivos HTML":
                     gerenciador_html.carregar_arquivos()
                     st.rerun()
             with col3:
-                # Botão para menu - AGORA FUNCIONAL
+                # Botão para menu - CORRIGIDO
                 if st.button("📋 Menu", help="Abrir menu principal", key="open_menu"):
                     st.session_state.menu_aberto = True
                     st.rerun()
@@ -591,7 +591,7 @@ if st.session_state.pagina == "📄 Arquivos HTML":
                     gerenciador_html.carregar_arquivos()
                     st.rerun()
             with col2:
-                # Botão para menu - AGORA FUNCIONAL
+                # Botão para menu - CORRIGIDO
                 if st.button("📋 Menu", help="Abrir menu principal", key="open_menu_single"):
                     st.session_state.menu_aberto = True
                     st.rerun()
@@ -791,44 +791,577 @@ elif st.session_state.pagina == "👥 Cadastrar Motorista":
                     'folga': folga,
                     'sobreaviso': sobreaviso,
                     'atestado': atestado,
-                    
-                    # Status operacional
                     'com-atend': com_atend,
                     'com-veiculo': com_veiculo,
+                    
+                    # Status operacional
                     'com-check': com_check,
                     'dirigindo': dirigindo,
                     'parado-ate1h': parado_ate1h,
                     'parado1ate2h': parado1ate2h,
                     'parado-acima2h': parado_acima2h,
-                    
-                    # Jornada
                     'jornada-acm80': jornada_acm80,
                     'jornada-exced': jornada_exced,
+                    
+                    # Jornada e documentação
                     'sem-folga-acm7d': sem_folga_acm7d,
                     'sem-folga-acm12d': sem_folga_acm12d,
-                    
-                    # Documentação
                     'doc-vencendo': doc_vencendo,
                     'doc-vencido': doc_vencido,
-                    
-                    # Localização e associação
                     'localiz-atual': localiz_atual,
                     'associacao-clientes': associacao_clientes,
-                    
-                    # Interjornada
                     'interj-menor8': interj_menor8,
                     'interj-maior8': interj_maior8
                 }
                 
                 if gerenciador.adicionar_motorista(dados_motorista):
                     st.success("✅ Motorista cadastrado com sucesso!")
-                    st.balloons()
+                    # Limpar campos
+                    st.rerun()
                 else:
                     st.error("❌ Erro ao cadastrar motorista")
             else:
-                st.warning("⚠️ Preencha os campos obrigatórios (Nome, Usuário, Empresa)")
+                st.error("❌ Preencha os campos obrigatórios (Nome, Usuário e Empresa)")
 
-# [AS DEMAIS PÁGINAS PERMANECEM EXATAMENTE COMO NO CÓDIGO ANTERIOR...]
-# Página: Importar Excel, Editar Motorista, Excluir Motorista, Lista Completa,
-# Cadastrar Cliente, Editar Cliente, Excluir Cliente, Lista de Clientes, Gerenciar HTML
-# ... (mantenha o mesmo código das páginas do código anterior)
+# Página: Importar Excel
+elif st.session_state.pagina == "📤 Importar Excel":
+    st.title("📤 Importar Dados do Excel")
+    
+    # Botão para voltar ao menu
+    if st.button("← Voltar para Visualização", key="back_importar"):
+        st.session_state.pagina = "📄 Arquivos HTML"
+        st.rerun()
+    
+    st.info("""
+    **Instruções para importação:**
+    - O arquivo Excel deve conter as colunas: **nome**, **usuario** e **empresa**
+    - Colunas adicionais serão mapeadas automaticamente
+    - Registros duplicados (mesmo nome e usuário) serão atualizados
+    - A estrutura será padronizada conforme o sistema
+    """)
+    
+    arquivo = st.file_uploader("Selecione o arquivo Excel", type=['xlsx', 'xls'])
+    
+    if arquivo is not None:
+        try:
+            # Pré-visualização dos dados
+            dados_preview = pd.read_excel(arquivo)
+            st.subheader("📋 Pré-visualização dos Dados")
+            st.dataframe(dados_preview.head(10), use_container_width=True)
+            
+            st.info(f"**Total de registros encontrados:** {len(dados_preview)}")
+            
+            if st.button("🚀 Importar Dados", type="primary"):
+                with st.spinner("Importando dados..."):
+                    # Volta para o início do arquivo
+                    arquivo.seek(0)
+                    
+                    if gerenciador.importar_excel(arquivo):
+                        st.success("✅ Dados importados com sucesso!")
+                        st.balloons()
+                    else:
+                        st.error("❌ Erro ao importar dados. Verifique a estrutura do arquivo.")
+        
+        except Exception as e:
+            st.error(f"❌ Erro ao ler arquivo: {e}")
+
+# Página: Editar Motorista
+elif st.session_state.pagina == "✏️ Editar Motorista":
+    st.title("✏️ Editar Motorista")
+    
+    # Botão para voltar ao menu
+    if st.button("← Voltar para Visualização", key="back_editar"):
+        st.session_state.pagina = "📄 Arquivos HTML"
+        st.rerun()
+    
+    if gerenciador.dados is not None and not gerenciador.dados.empty:
+        # Seletor de motorista
+        motoristas = gerenciador.dados['nome'].tolist()
+        motorista_selecionado = st.selectbox("Selecione o motorista para editar:", motoristas)
+        
+        if motorista_selecionado:
+            # Encontrar índice do motorista
+            idx = gerenciador.dados[gerenciador.dados['nome'] == motorista_selecionado].index[0]
+            motorista_data = gerenciador.dados.iloc[idx]
+            
+            with st.form("form_editar"):
+                st.subheader("Editando: " + motorista_selecionado)
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    nome = st.text_input("Nome completo*", value=motorista_data.get('nome', ''))
+                    usuario = st.text_input("Usuário*", value=motorista_data.get('usuario', ''))
+                    grupo = st.selectbox("Grupo*", ["Motorista"], index=0)
+                    empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"], 
+                                         index=0 if motorista_data.get('empresa') == "EXPRESSO" else 1)
+                    filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"],
+                                        index=["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"].index(
+                                            motorista_data.get('filial', 'MEA')))
+                
+                with col2:
+                    status = st.selectbox("Status*", ["ATIVO", "INATIVO"],
+                                        index=0 if motorista_data.get('status') == "ATIVO" else 1)
+                    categoria = st.selectbox("Categoria CNH", ["A", "B", "C", "D", "E"],
+                                           index=["A", "B", "C", "D", "E"].index(
+                                               motorista_data.get('categoria', 'B')))
+                    placa1 = st.text_input("Placa Principal", value=motorista_data.get('placa1', ''))
+                    placa2 = st.text_input("Placa Secundária", value=motorista_data.get('placa2', ''))
+                    placa3 = st.text_input("Placa Terciária", value=motorista_data.get('placa3', ''))
+                
+                # Status do motorista
+                col3, col4 = st.columns(2)
+                
+                with col3:
+                    disponibilidade = st.selectbox("Disponibilidade*", 
+                                                 ["Trabalhando", "Interjornada", "Indisponíveis"],
+                                                 index=["Trabalhando", "Interjornada", "Indisponíveis"].index(
+                                                     motorista_data.get('disponibilidade', 'Trabalhando')))
+                    ferias = st.selectbox("Férias*", ["Sim", "Não"],
+                                        index=0 if motorista_data.get('ferias') == "Sim" else 1)
+                    licenca = st.selectbox("Licença*", ["Sim", "Não"],
+                                         index=0 if motorista_data.get('licenca') == "Sim" else 1)
+                    folga = st.selectbox("Folga*", ["Sim", "Não"],
+                                       index=0 if motorista_data.get('folga') == "Sim" else 1)
+                
+                with col4:
+                    sobreaviso = st.selectbox("Sobreaviso*", ["Sim", "Não"],
+                                            index=0 if motorista_data.get('sobreaviso') == "Sim" else 1)
+                    atestado = st.selectbox("Atestado*", ["Sim", "Não"],
+                                          index=0 if motorista_data.get('atestado') == "Sim" else 1)
+                    com_atend = st.selectbox("Com Atendimento", ["", "Sim", "Não"],
+                                           index=["", "Sim", "Não"].index(
+                                               motorista_data.get('com-atend', '')))
+                    com_veiculo = st.selectbox("Com Veículo", ["", "Sim", "Não"],
+                                             index=["", "Sim", "Não"].index(
+                                                 motorista_data.get('com-veiculo', '')))
+                
+                submitted = st.form_submit_button("💾 Salvar Alterações")
+                
+                if submitted:
+                    if nome and usuario and empresa:
+                        dados_atualizados = {
+                            'nome': nome,
+                            'usuario': usuario,
+                            'grupo': grupo,
+                            'empresa': empresa,
+                            'filial': filial,
+                            'status': status,
+                            'categoria': categoria,
+                            'placa1': placa1,
+                            'placa2': placa2,
+                            'placa3': placa3,
+                            'disponibilidade': disponibilidade,
+                            'ferias': ferias,
+                            'licenca': licenca,
+                            'folga': folga,
+                            'sobreaviso': sobreaviso,
+                            'atestado': atestado,
+                            'com-atend': com_atend,
+                            'com-veiculo': com_veiculo
+                        }
+                        
+                        if gerenciador.atualizar_motorista(idx, dados_atualizados):
+                            st.success("✅ Motorista atualizado com sucesso!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Erro ao atualizar motorista")
+                    else:
+                        st.error("❌ Preencha os campos obrigatórios")
+    else:
+        st.info("Nenhum motorista cadastrado para editar.")
+
+# Página: Excluir Motorista
+elif st.session_state.pagina == "🗑️ Excluir Motorista":
+    st.title("🗑️ Excluir Motorista")
+    
+    # Botão para voltar ao menu
+    if st.button("← Voltar para Visualização", key="back_excluir"):
+        st.session_state.pagina = "📄 Arquivos HTML"
+        st.rerun()
+    
+    if gerenciador.dados is not None and not gerenciador.dados.empty:
+        # Seletor de motorista
+        motoristas = gerenciador.dados['nome'].tolist()
+        motorista_selecionado = st.selectbox("Selecione o motorista para excluir:", motoristas)
+        
+        if motorista_selecionado:
+            # Encontrar dados do motorista
+            motorista_data = gerenciador.dados[gerenciador.dados['nome'] == motorista_selecionado].iloc[0]
+            
+            st.warning(f"🚨 **Atenção:** Você está prestes a excluir o motorista **{motorista_selecionado}**")
+            
+            # Mostrar informações do motorista
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write("**Usuário:**", motorista_data.get('usuario', ''))
+                st.write("**Empresa:**", motorista_data.get('empresa', ''))
+                st.write("**Filial:**", motorista_data.get('filial', ''))
+            with col2:
+                st.write("**Status:**", motorista_data.get('status', ''))
+                st.write("**Categoria:**", motorista_data.get('categoria', ''))
+                st.write("**Placa:**", motorista_data.get('placa1', ''))
+            
+            # Confirmação
+            confirmacao = st.checkbox("✅ Confirmo que desejo excluir este motorista permanentemente")
+            
+            if st.button("🗑️ Excluir Permanentemente", type="primary", disabled=not confirmacao):
+                idx = gerenciador.dados[gerenciador.dados['nome'] == motorista_selecionado].index[0]
+                
+                if gerenciador.excluir_motorista(idx):
+                    st.success("✅ Motorista excluído com sucesso!")
+                    st.rerun()
+                else:
+                    st.error("❌ Erro ao excluir motorista")
+    else:
+        st.info("Nenhum motorista cadastrado para excluir.")
+
+# Página: Lista Completa
+elif st.session_state.pagina == "📋 Lista Completa":
+    st.title("📋 Lista Completa de Motoristas")
+    
+    # Botão para voltar ao menu
+    if st.button("← Voltar para Visualização", key="back_lista"):
+        st.session_state.pagina = "📄 Arquivos HTML"
+        st.rerun()
+    
+    if gerenciador.dados is not None and not gerenciador.dados.empty:
+        # Filtros
+        st.subheader("🔍 Filtros")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            filtro_empresa = st.selectbox("Empresa", ["Todas"] + obter_valores_unicos('empresa', gerenciador.dados))
+        
+        with col2:
+            filtro_status = st.selectbox("Status", ["Todos"] + obter_valores_unicos('status', gerenciador.dados))
+        
+        with col3:
+            filtro_filial = st.selectbox("Filial", ["Todas"] + obter_valores_unicos('filial', gerenciador.dados))
+        
+        # Aplicar filtros
+        dados_filtrados = gerenciador.dados.copy()
+        
+        if filtro_empresa != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['empresa'] == filtro_empresa]
+        
+        if filtro_status != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['status'] == filtro_status]
+        
+        if filtro_filial != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['filial'] == filtro_filial]
+        
+        # Mostrar dados
+        st.subheader(f"📊 Resultados ({len(dados_filtrados)} motoristas)")
+        
+        # Seleção de colunas para exibir
+        colunas_disponiveis = st.multiselect(
+            "Selecione as colunas para exibir:",
+            COLUNAS_PRINCIPAIS,
+            default=COLUNAS_PRINCIPAIS
+        )
+        
+        if colunas_disponiveis:
+            dados_exibir = dados_filtrados[colunas_disponiveis]
+            st.dataframe(dados_exibir, use_container_width=True)
+            
+            # Botão de download
+            csv = dados_exibir.to_csv(index=False)
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv,
+                file_name=f"motoristas_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                mime="text/csv"
+            )
+        else:
+            st.warning("Selecione pelo menos uma coluna para exibir.")
+    
+    else:
+        st.info("Nenhum motorista cadastrado.")
+
+# Página: Cadastrar Cliente
+elif st.session_state.pagina == "🏢 Cadastrar Cliente":
+    st.title("🏢 Cadastrar Novo Cliente")
+    
+    # Botão para voltar ao menu
+    if st.button("← Voltar para Visualização", key="back_cad_cliente"):
+        st.session_state.pagina = "📄 Arquivos HTML"
+        st.rerun()
+    
+    with st.form("form_cliente"):
+        st.subheader("Informações do Cliente")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            cliente = st.text_input("Código do Cliente*")
+            nome = st.text_input("Nome completo*")
+            usuario = st.text_input("Usuário*")
+        
+        with col2:
+            empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"])
+            filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"])
+            status = st.selectbox("Status*", ["ATIVO", "INATIVO"])
+        
+        submitted = st.form_submit_button("💾 Cadastrar Cliente")
+        
+        if submitted:
+            if cliente and nome and usuario and empresa:
+                dados_cliente = {
+                    'cliente': cliente,
+                    'nome': nome,
+                    'usuario': usuario,
+                    'empresa': empresa,
+                    'filial': filial,
+                    'status': status
+                }
+                
+                if gerenciador.adicionar_cliente(dados_cliente):
+                    st.success("✅ Cliente cadastrado com sucesso!")
+                    st.rerun()
+                else:
+                    st.error("❌ Erro ao cadastrar cliente")
+            else:
+                st.error("❌ Preencha os campos obrigatórios")
+
+# Página: Editar Cliente
+elif st.session_state.pagina == "✏️ Editar Cliente":
+    st.title("✏️ Editar Cliente")
+    
+    # Botão para voltar ao menu
+    if st.button("← Voltar para Visualização", key="back_edit_cliente"):
+        st.session_state.pagina = "📄 Arquivos HTML"
+        st.rerun()
+    
+    if gerenciador.tem_dados_clientes():
+        # Seletor de cliente
+        clientes = gerenciador.dados_clientes['nome'].tolist()
+        cliente_selecionado = st.selectbox("Selecione o cliente para editar:", clientes)
+        
+        if cliente_selecionado:
+            # Encontrar índice do cliente
+            idx = gerenciador.dados_clientes[gerenciador.dados_clientes['nome'] == cliente_selecionado].index[0]
+            cliente_data = gerenciador.dados_clientes.iloc[idx]
+            
+            with st.form("form_editar_cliente"):
+                st.subheader("Editando: " + cliente_selecionado)
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    cliente = st.text_input("Código do Cliente*", value=cliente_data.get('cliente', ''))
+                    nome = st.text_input("Nome completo*", value=cliente_data.get('nome', ''))
+                    usuario = st.text_input("Usuário*", value=cliente_data.get('usuario', ''))
+                
+                with col2:
+                    empresa = st.selectbox("Empresa*", ["EXPRESSO", "LOGIKA"], 
+                                         index=0 if cliente_data.get('empresa') == "EXPRESSO" else 1)
+                    filial = st.selectbox("Filial*", ["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"],
+                                        index=["MEA", "RIO", "CXA", "VIX", "SPO", "LGK", "NPA"].index(
+                                            cliente_data.get('filial', 'MEA')))
+                    status = st.selectbox("Status*", ["ATIVO", "INATIVO"],
+                                        index=0 if cliente_data.get('status') == "ATIVO" else 1)
+                
+                submitted = st.form_submit_button("💾 Salvar Alterações")
+                
+                if submitted:
+                    if cliente and nome and usuario and empresa:
+                        dados_atualizados = {
+                            'cliente': cliente,
+                            'nome': nome,
+                            'usuario': usuario,
+                            'empresa': empresa,
+                            'filial': filial,
+                            'status': status
+                        }
+                        
+                        if gerenciador.atualizar_cliente(idx, dados_atualizados):
+                            st.success("✅ Cliente atualizado com sucesso!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Erro ao atualizar cliente")
+                    else:
+                        st.error("❌ Preencha os campos obrigatórios")
+    else:
+        st.info("Nenhum cliente cadastrado para editar.")
+
+# Página: Excluir Cliente
+elif st.session_state.pagina == "🗑️ Excluir Cliente":
+    st.title("🗑️ Excluir Cliente")
+    
+    # Botão para voltar ao menu
+    if st.button("← Voltar para Visualização", key="back_del_cliente"):
+        st.session_state.pagina = "📄 Arquivos HTML"
+        st.rerun()
+    
+    if gerenciador.tem_dados_clientes():
+        # Seletor de cliente
+        clientes = gerenciador.dados_clientes['nome'].tolist()
+        cliente_selecionado = st.selectbox("Selecione o cliente para excluir:", clientes)
+        
+        if cliente_selecionado:
+            # Encontrar dados do cliente
+            cliente_data = gerenciador.dados_clientes[gerenciador.dados_clientes['nome'] == cliente_selecionado].iloc[0]
+            
+            st.warning(f"🚨 **Atenção:** Você está prestes a excluir o cliente **{cliente_selecionado}**")
+            
+            # Mostrar informações do cliente
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write("**Código:**", cliente_data.get('cliente', ''))
+                st.write("**Usuário:**", cliente_data.get('usuario', ''))
+            with col2:
+                st.write("**Empresa:**", cliente_data.get('empresa', ''))
+                st.write("**Status:**", cliente_data.get('status', ''))
+            
+            # Confirmação
+            confirmacao = st.checkbox("✅ Confirmo que desejo excluir este cliente permanentemente")
+            
+            if st.button("🗑️ Excluir Permanentemente", type="primary", disabled=not confirmacao):
+                idx = gerenciador.dados_clientes[gerenciador.dados_clientes['nome'] == cliente_selecionado].index[0]
+                
+                if gerenciador.excluir_cliente(idx):
+                    st.success("✅ Cliente excluído com sucesso!")
+                    st.rerun()
+                else:
+                    st.error("❌ Erro ao excluir cliente")
+    else:
+        st.info("Nenhum cliente cadastrado para excluir.")
+
+# Página: Lista de Clientes
+elif st.session_state.pagina == "📋 Lista de Clientes":
+    st.title("📋 Lista de Clientes")
+    
+    # Botão para voltar ao menu
+    if st.button("← Voltar para Visualização", key="back_lista_clientes"):
+        st.session_state.pagina = "📄 Arquivos HTML"
+        st.rerun()
+    
+    if gerenciador.tem_dados_clientes():
+        # Filtros
+        st.subheader("🔍 Filtros")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            filtro_empresa = st.selectbox("Empresa", ["Todas"] + obter_valores_unicos('empresa', gerenciador.dados_clientes))
+        
+        with col2:
+            filtro_status = st.selectbox("Status", ["Todos"] + obter_valores_unicos('status', gerenciador.dados_clientes))
+        
+        with col3:
+            filtro_filial = st.selectbox("Filial", ["Todas"] + obter_valores_unicos('filial', gerenciador.dados_clientes))
+        
+        # Aplicar filtros
+        dados_filtrados = gerenciador.dados_clientes.copy()
+        
+        if filtro_empresa != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['empresa'] == filtro_empresa]
+        
+        if filtro_status != "Todos":
+            dados_filtrados = dados_filtrados[dados_filtrados['status'] == filtro_status]
+        
+        if filtro_filial != "Todas":
+            dados_filtrados = dados_filtrados[dados_filtrados['filial'] == filtro_filial]
+        
+        # Mostrar dados
+        st.subheader(f"📊 Resultados ({len(dados_filtrados)} clientes)")
+        st.dataframe(dados_filtrados, use_container_width=True)
+        
+        # Botão de download
+        csv = dados_filtrados.to_csv(index=False)
+        st.download_button(
+            label="📥 Download CSV",
+            data=csv,
+            file_name=f"clientes_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+            mime="text/csv"
+        )
+    
+    else:
+        st.info("Nenhum cliente cadastrado.")
+
+# Página: Gerenciar HTML
+elif st.session_state.pagina == "🌐 Gerenciar HTML":
+    st.title("🌐 Gerenciar Arquivos HTML")
+    
+    # Botão para voltar ao menu
+    if st.button("← Voltar para Visualização", key="back_gerenciar"):
+        st.session_state.pagina = "📄 Arquivos HTML"
+        st.rerun()
+    
+    # Atualizar lista de arquivos
+    gerenciador_html.carregar_arquivos()
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("📤 Importar Novo Relatório HTML")
+        arquivo_upload = st.file_uploader("Selecione o arquivo HTML", type=['html'])
+        
+        if arquivo_upload is not None:
+            if st.button("📥 Importar Arquivo HTML"):
+                with st.spinner("Importando arquivo..."):
+                    if gerenciador_html.importar_html(arquivo_upload):
+                        st.success("✅ Arquivo HTML importado com sucesso!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Erro ao importar arquivo HTML")
+    
+    with col2:
+        st.subheader("⚙️ Ações")
+        
+        # Botão para limpar pasta
+        if st.button("🗑️ Limpar Pasta HTML", type="secondary"):
+            if gerenciador_html.limpar_pasta():
+                st.success("✅ Pasta HTML limpa com sucesso!")
+                st.rerun()
+            else:
+                st.error("❌ Erro ao limpar pasta HTML")
+        
+        # Botão para atualizar lista
+        if st.button("🔄 Atualizar Lista"):
+            gerenciador_html.carregar_arquivos()
+            st.rerun()
+    
+    # Lista de arquivos existentes
+    st.subheader("📁 Arquivos na Pasta HTML")
+    
+    if gerenciador_html.arquivos_html:
+        for i, arquivo in enumerate(gerenciador_html.arquivos_html):
+            col_arq1, col_arq2, col_arq3 = st.columns([3, 1, 1])
+            
+            with col_arq1:
+                st.write(f"**{i+1}. {arquivo}**")
+            
+            with col_arq2:
+                if st.button("👁️ Visualizar", key=f"view_{i}"):
+                    st.session_state.pagina = "📄 Arquivos HTML"
+                    st.rerun()
+            
+            with col_arq3:
+                if st.button("🗑️ Excluir", key=f"del_{i}"):
+                    try:
+                        caminho_arquivo = os.path.join(gerenciador_html.pasta_html, arquivo)
+                        os.remove(caminho_arquivo)
+                        st.success(f"✅ Arquivo {arquivo} excluído!")
+                        gerenciador_html.carregar_arquivos()
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Erro ao excluir arquivo: {e}")
+    else:
+        st.info("📭 Nenhum arquivo HTML na pasta.")
+
+# Footer com informações do sistema
+st.markdown("---")
+col_footer1, col_footer2, col_footer3 = st.columns(3)
+
+with col_footer1:
+    st.markdown("**Sistema de Motoristas v1.0**")
+
+with col_footer2:
+    if gerenciador.ultima_atualizacao:
+        st.markdown(f"Última atualização: {gerenciador.ultima_atualizacao.strftime('%d/%m/%Y %H:%M')}")
+
+with col_footer3:
+    # Botão para mostrar/ocultar código fonte - CORRIGIDO
+    if st.button("👁️ Mostrar Código Fonte", key="toggle_code"):
+        st.session_state.mostrar_codigo_fonte = not st.session_state.mostrar_codigo_fonte
+        st.rerun()
