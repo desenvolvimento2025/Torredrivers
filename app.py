@@ -397,104 +397,98 @@ def obter_valores_unicos(coluna, dados):
     except Exception:
         return []
 
-# Página: Arquivos HTML (NOVA PÁGINA PRINCIPAL)
+# Página: Arquivos HTML (NOVA PÁGINA PRINCIPAL SIMPLIFICADA)
 if pagina == "📄 Arquivos HTML":
-    st.title("📄 Arquivos HTML Importados")
-    
     # Atualizar lista de arquivos
     gerenciador_html.carregar_arquivos()
     
     if gerenciador_html.arquivos_html:
-        st.success(f"✅ {len(gerenciador_html.arquivos_html)} arquivo(s) HTML disponível(is)")
+        # Seletor de arquivos discreto no topo
+        if len(gerenciador_html.arquivos_html) > 1:
+            arquivo_selecionado = st.selectbox(
+                "Selecione o relatório:",
+                gerenciador_html.arquivos_html,
+                index=0,
+                label_visibility="collapsed"
+            )
+        else:
+            arquivo_selecionado = gerenciador_html.arquivos_html[0]
         
-        # Mostrar o primeiro arquivo automaticamente
-        arquivo_principal = gerenciador_html.arquivos_html[0]
-        st.info(f"**Visualizando:** {arquivo_principal}")
+        # Botões de ação compactos em uma linha
+        col1, col2, col3, col4 = st.columns([1, 1, 1, 7])
+        
+        with col1:
+            # Download do arquivo
+            conteudo_html = gerenciador_html.obter_conteudo_html(arquivo_selecionado)
+            if conteudo_html:
+                st.download_button(
+                    label="📥",
+                    data=conteudo_html,
+                    file_name=arquivo_selecionado,
+                    mime="text/html",
+                    help="Baixar arquivo HTML"
+                )
+        
+        with col2:
+            # Ver código fonte
+            if st.button("📝", help="Ver código fonte"):
+                st.session_state.mostrar_codigo_fonte = not st.session_state.get('mostrar_codigo_fonte', False)
+                st.rerun()
+        
+        with col3:
+            # Atualizar lista
+            if st.button("🔄", help="Atualizar lista"):
+                gerenciador_html.carregar_arquivos()
+                st.rerun()
+        
+        with col4:
+            st.write(f"**Visualizando:** {arquivo_selecionado}")
         
         # Obter conteúdo do arquivo
-        conteudo_html = gerenciador_html.obter_conteudo_html(arquivo_principal)
+        conteudo_html = gerenciador_html.obter_conteudo_html(arquivo_selecionado)
         
         if conteudo_html:
-            # Se houver múltiplos arquivos, mostrar seletor
-            if len(gerenciador_html.arquivos_html) > 1:
-                arquivo_selecionado = st.selectbox(
-                    "Selecione o arquivo para visualizar:",
-                    gerenciador_html.arquivos_html,
-                    index=0
-                )
-                
-                if arquivo_selecionado != arquivo_principal:
-                    conteudo_html = gerenciador_html.obter_conteudo_html(arquivo_selecionado)
-                    arquivo_principal = arquivo_selecionado
-            
-            # Renderizar o HTML diretamente
+            # Renderizar HTML em tela cheia
             st.markdown("---")
-            st.subheader(f"👁️ Visualização: {arquivo_principal}")
             
-            # Container para o HTML com borda e scroll
-            st.markdown("""
-            <style>
-            .html-container {
-                border: 2px solid #e0e0e0;
-                border-radius: 5px;
-                padding: 10px;
-                background-color: #f9f9f9;
-            }
-            </style>
-            """, unsafe_allow_html=True)
+            # Altura máxima para tela cheia
+            altura = 800
             
-            # Renderizar HTML
-            st.components.v1.html(conteudo_html, height=600, scrolling=True)
+            # Renderizar HTML diretamente em tela cheia
+            st.components.v1.html(conteudo_html, height=altura, scrolling=True)
             
-            # Ações rápidas
-            st.markdown("---")
-            st.subheader("🔧 Ações Rápidas")
-            
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                # Download do arquivo
-                st.download_button(
-                    label="📥 Baixar HTML",
-                    data=conteudo_html,
-                    file_name=arquivo_principal,
-                    mime="text/html",
-                    use_container_width=True
-                )
-            
-            with col2:
-                # Ver código fonte
-                if st.button("📝 Ver Código Fonte", use_container_width=True):
-                    st.session_state.mostrar_codigo_fonte = not st.session_state.get('mostrar_codigo_fonte', False)
-            
-            with col3:
-                # Ir para gerenciamento avançado
-                if st.button("⚙️ Gerenciar Arquivos", use_container_width=True):
-                    st.session_state.pagina = "🌐 Gerenciar HTML"
-                    st.rerun()
-            
-            # Mostrar código fonte se solicitado
+            # Mostrar código fonte se solicitado (em expander para não atrapalhar a visualização)
             if st.session_state.get('mostrar_codigo_fonte', False):
-                st.markdown("---")
-                st.subheader("📝 Código Fonte")
-                st.code(conteudo_html, language='html')
+                with st.expander("📝 Código Fonte do Relatório", expanded=True):
+                    st.code(conteudo_html, language='html')
         
         else:
-            st.error("❌ Não foi possível carregar o conteúdo do arquivo HTML")
+            st.error("❌ Não foi possível carregar o conteúdo do relatório")
     
     else:
-        st.info("📭 Nenhum arquivo HTML importado.")
+        # Tela quando não há arquivos
         st.markdown("""
-        ### Para começar:
+        <div style='
+            text-align: center; 
+            padding: 60px 20px; 
+            background-color: #f8f9fa; 
+            border-radius: 10px;
+            border: 2px dashed #dee2e6;
+            margin: 40px 0;
+        '>
+            <h3 style='color: #6c757d; margin-bottom: 20px;'>📭 Nenhum Relatório Encontrado</h3>
+            <p style='color: #6c757d; font-size: 16px; margin-bottom: 30px;'>
+                Importe seu primeiro relatório HTML para visualizá-lo aqui.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        1. **Importe um arquivo HTML** usando o gerenciador
-        2. **Visualize diretamente** nesta página
-        3. **Acesse rapidamente** seus relatórios e documentos
-        """)
+        col_empty1, col_empty2, col_empty3 = st.columns([1, 2, 1])
         
-        if st.button("📤 Ir para Importação de HTML"):
-            st.session_state.pagina = "🌐 Gerenciar HTML"
-            st.rerun()
+        with col_empty2:
+            if st.button("📤 Importar Primeiro Relatório", type="primary", use_container_width=True):
+                st.session_state.pagina = "🌐 Gerenciar HTML"
+                st.rerun()
 
 # Página: Dashboard
 elif pagina == "📊 Dashboard":
