@@ -10,12 +10,11 @@ import base64
 import shutil
 from pathlib import Path
 
-# Configuração da página - MENU MINIMIZADO POR PADRÃO
+# Configuração da página
 st.set_page_config(
     page_title="Sistema de Motoristas",
     page_icon="🚗",
-    layout="wide",
-    initial_sidebar_state="collapsed"  # Menu minimizado por padrão
+    layout="wide"
 )
 
 # ESTRUTURA ATUALIZADA COM NOMES EXATOS DO TEMPLATE
@@ -356,30 +355,14 @@ gerenciador = get_gerenciador()
 if 'pagina' not in st.session_state:
     st.session_state.pagina = "📄 Arquivos HTML"
 
-# Sidebar para navegação - MAIS COMPACTO
-with st.sidebar:
-    st.title("🚗 Sistema de Motoristas")
-    
-    # Botão para expandir/recolher menu
-    if st.button("📋 Menu", use_container_width=True):
-        if st.session_state.get('menu_expandido', False):
-            st.session_state.menu_expandido = False
-        else:
-            st.session_state.menu_expandido = True
-        st.rerun()
-    
-    # Menu principal (expandido/recolhido)
-    if st.session_state.get('menu_expandido', False):
-        pagina = st.selectbox(
-            "Navegação",
-            ["📄 Arquivos HTML", "📊 Dashboard", "👥 Cadastrar Motorista", "📤 Importar Excel", "✏️ Editar Motorista", "🗑️ Excluir Motorista", "📋 Lista Completa", 
-             "🏢 Cadastrar Cliente", "✏️ Editar Cliente", "🗑️ Excluir Cliente", "📋 Lista de Clientes",
-             "🌐 Gerenciar HTML"],
-            label_visibility="collapsed"
-        )
-    else:
-        # Se menu recolhido, manter a página atual
-        pagina = st.session_state.pagina
+# Sidebar para navegação
+st.sidebar.title("🚗 Sistema de Motoristas")
+pagina = st.sidebar.selectbox(
+    "Navegação",
+    ["📄 Arquivos HTML", "📊 Dashboard", "👥 Cadastrar Motorista", "📤 Importar Excel", "✏️ Editar Motorista", "🗑️ Excluir Motorista", "📋 Lista Completa", 
+     "🏢 Cadastrar Cliente", "✏️ Editar Cliente", "🗑️ Excluir Cliente", "📋 Lista de Clientes",
+     "🌐 Gerenciar HTML"]
+)
 
 # Verificar se há redirecionamento por arquivo específico do sidebar
 if 'arquivo_sidebar' in st.session_state and st.session_state.arquivo_sidebar:
@@ -414,76 +397,102 @@ def obter_valores_unicos(coluna, dados):
     except Exception:
         return []
 
-# Página: Arquivos HTML (PÁGINA PRINCIPAL FOCADA NA VISUALIZAÇÃO)
+# Página: Arquivos HTML (NOVA PÁGINA PRINCIPAL)
 if pagina == "📄 Arquivos HTML":
+    st.title("📄 Arquivos HTML Importados")
+    
     # Atualizar lista de arquivos
     gerenciador_html.carregar_arquivos()
     
     if gerenciador_html.arquivos_html:
-        # Seletor de arquivos discreto no topo
-        if len(gerenciador_html.arquivos_html) > 1:
-            arquivo_selecionado = st.selectbox(
-                "Selecione o relatório:",
-                gerenciador_html.arquivos_html,
-                index=0,
-                label_visibility="collapsed"
-            )
-        else:
-            arquivo_selecionado = gerenciador_html.arquivos_html[0]
+        st.success(f"✅ {len(gerenciador_html.arquivos_html)} arquivo(s) HTML disponível(is)")
         
-        # Botões de ação compactos em uma linha - APENAS DOWNLOAD
-        col1, col2 = st.columns([1, 11])
-        
-        with col1:
-            # Download do arquivo
-            conteudo_html = gerenciador_html.obter_conteudo_html(arquivo_selecionado)
-            if conteudo_html:
-                st.download_button(
-                    label="📥",
-                    data=conteudo_html,
-                    file_name=arquivo_selecionado,
-                    mime="text/html",
-                    help="Baixar arquivo HTML"
-                )
-        
-        with col2:
-            st.write(f"**Visualizando:** {arquivo_selecionado}")
+        # Mostrar o primeiro arquivo automaticamente
+        arquivo_principal = gerenciador_html.arquivos_html[0]
+        st.info(f"**Visualizando:** {arquivo_principal}")
         
         # Obter conteúdo do arquivo
-        conteudo_html = gerenciador_html.obter_conteudo_html(arquivo_selecionado)
+        conteudo_html = gerenciador_html.obter_conteudo_html(arquivo_principal)
         
         if conteudo_html:
-            # Renderizar HTML em tela cheia - MÁXIMA VISUALIZAÇÃO
+            # Se houver múltiplos arquivos, mostrar seletor
+            if len(gerenciador_html.arquivos_html) > 1:
+                arquivo_selecionado = st.selectbox(
+                    "Selecione o arquivo para visualizar:",
+                    gerenciador_html.arquivos_html,
+                    index=0
+                )
+                
+                if arquivo_selecionado != arquivo_principal:
+                    conteudo_html = gerenciador_html.obter_conteudo_html(arquivo_selecionado)
+                    arquivo_principal = arquivo_selecionado
+            
+            # Renderizar o HTML diretamente
             st.markdown("---")
+            st.subheader(f"👁️ Visualização: {arquivo_principal}")
             
-            # Altura máxima para tela cheia - OTIMIZADA
-            altura = 950
+            # Container para o HTML com borda e scroll
+            st.markdown("""
+            <style>
+            .html-container {
+                border: 2px solid #e0e0e0;
+                border-radius: 5px;
+                padding: 10px;
+                background-color: #f9f9f9;
+            }
+            </style>
+            """, unsafe_allow_html=True)
             
-            # Renderizar HTML diretamente em tela cheia
-            st.components.v1.html(conteudo_html, height=altura, scrolling=True)
+            # Renderizar HTML
+            st.components.v1.html(conteudo_html, height=600, scrolling=True)
+            
+            # Ações rápidas
+            st.markdown("---")
+            st.subheader("🔧 Ações Rápidas")
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                # Download do arquivo
+                st.download_button(
+                    label="📥 Baixar HTML",
+                    data=conteudo_html,
+                    file_name=arquivo_principal,
+                    mime="text/html",
+                    use_container_width=True
+                )
+            
+            with col2:
+                # Ver código fonte
+                if st.button("📝 Ver Código Fonte", use_container_width=True):
+                    st.session_state.mostrar_codigo_fonte = not st.session_state.get('mostrar_codigo_fonte', False)
+            
+            with col3:
+                # Ir para gerenciamento avançado
+                if st.button("⚙️ Gerenciar Arquivos", use_container_width=True):
+                    st.session_state.pagina = "🌐 Gerenciar HTML"
+                    st.rerun()
+            
+            # Mostrar código fonte se solicitado
+            if st.session_state.get('mostrar_codigo_fonte', False):
+                st.markdown("---")
+                st.subheader("📝 Código Fonte")
+                st.code(conteudo_html, language='html')
         
         else:
-            st.error("❌ Não foi possível carregar o conteúdo do relatório")
+            st.error("❌ Não foi possível carregar o conteúdo do arquivo HTML")
     
     else:
-        # Tela quando não há arquivos - MAIS COMPACTA
+        st.info("📭 Nenhum arquivo HTML importado.")
         st.markdown("""
-        <div style='
-            text-align: center; 
-            padding: 40px 20px; 
-            background-color: #f8f9fa; 
-            border-radius: 10px;
-            border: 2px dashed #dee2e6;
-            margin: 20px 0;
-        '>
-            <h3 style='color: #6c757d; margin-bottom: 15px;'>📭 Nenhum Relatório Encontrado</h3>
-            <p style='color: #6c757d; font-size: 14px; margin-bottom: 20px;'>
-                Importe seu primeiro relatório HTML para visualizá-lo aqui.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+        ### Para começar:
         
-        if st.button("📤 Importar Primeiro Relatório", type="primary", use_container_width=True):
+        1. **Importe um arquivo HTML** usando o gerenciador
+        2. **Visualize diretamente** nesta página
+        3. **Acesse rapidamente** seus relatórios e documentos
+        """)
+        
+        if st.button("📤 Ir para Importação de HTML"):
             st.session_state.pagina = "🌐 Gerenciar HTML"
             st.rerun()
 
@@ -1671,36 +1680,48 @@ elif pagina == "🌐 Gerenciar HTML":
                 st.session_state.pagina = "📄 Arquivos HTML"
                 st.rerun()
 
-# Informações de atualização no sidebar (MAIS COMPACTO)
-with st.sidebar:
-    st.markdown("---")
+# Informações de atualização no sidebar
+st.sidebar.markdown("---")
+st.sidebar.subheader("🔄 Atualização")
+if gerenciador.ultima_atualizacao:
+    st.sidebar.write(f"Última atualização: {gerenciador.ultima_atualizacao.strftime('%d/%m/%Y %H:%M')}")
+
+if st.sidebar.button("🔄 Atualizar Agora"):
+    gerenciador.carregar_dados()
+    st.session_state.ultima_atualizacao = datetime.now()
+    st.rerun()
+
+# Seção de Arquivos HTML no Sidebar
+st.sidebar.markdown("---")
+st.sidebar.subheader("🌐 Arquivos HTML")
+
+if gerenciador_html.arquivos_html:
+    st.sidebar.success(f"📁 {len(gerenciador_html.arquivos_html)} arquivo(s)")
     
-    # Seção compacta de atualização
-    if st.button("🔄 Atualizar Dados", use_container_width=True):
-        gerenciador.carregar_dados()
-        st.session_state.ultima_atualizacao = datetime.now()
+    # Mostrar apenas os primeiros 3 arquivos para não poluir
+    for i, arquivo in enumerate(gerenciador_html.arquivos_html[:3]):
+        if st.sidebar.button(f"📄 {arquivo}", key=f"sidebar_{i}"):
+            st.session_state.pagina = "📄 Arquivos HTML"
+            st.session_state.arquivo_sidebar = arquivo
+            st.rerun()
+    
+    if len(gerenciador_html.arquivos_html) > 3:
+        st.sidebar.info(f"... e mais {len(gerenciador_html.arquivos_html) - 3} arquivos")
+else:
+    st.sidebar.info("📭 Nenhum arquivo")
+
+# Botões de ação rápida no sidebar
+col_sidebar1, col_sidebar2 = st.sidebar.columns(2)
+
+with col_sidebar1:
+    if st.button("👁️ Visualizar", use_container_width=True):
+        st.session_state.pagina = "📄 Arquivos HTML"
         st.rerun()
-    
-    if gerenciador.ultima_atualizacao:
-        st.caption(f"Última atualização: {gerenciador.ultima_atualizacao.strftime('%d/%m/%Y %H:%M')}")
-    
-    st.markdown("---")
-    
-    # Seção compacta de arquivos HTML
-    if gerenciador_html.arquivos_html:
-        st.caption(f"📁 {len(gerenciador_html.arquivos_html)} arquivo(s) HTML")
-        
-        # Acesso rápido aos arquivos
-        for i, arquivo in enumerate(gerenciador_html.arquivos_html[:2]):
-            if st.button(f"📄 {arquivo}", key=f"sidebar_{i}", use_container_width=True):
-                st.session_state.pagina = "📄 Arquivos HTML"
-                st.session_state.arquivo_sidebar = arquivo
-                st.rerun()
-        
-        if len(gerenciador_html.arquivos_html) > 2:
-            st.caption(f"... e mais {len(gerenciador_html.arquivos_html) - 2}")
-    else:
-        st.caption("📭 Nenhum arquivo")
-    
-    st.markdown("---")
-    st.caption("Sistema atualizado automaticamente a cada 1 hora")
+
+with col_sidebar2:
+    if st.button("⚙️ Gerenciar", use_container_width=True):
+        st.session_state.pagina = "🌐 Gerenciar HTML"
+        st.rerun()
+
+st.sidebar.markdown("---")
+st.sidebar.info("Sistema atualizado automaticamente a cada 1 hora")
