@@ -1,0 +1,1618 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Serviços em aberto na Torre</title>
+</head><body>
+<style>
+  /* Layout: header KPI strip, then three stacked chart cards (responsável / ontem+filter / motorista) */
+  :root {
+    --bg: #f9f9f7;
+    --surface: #fcfcfb;
+    --surface-raised: #ffffff;
+    --border: rgba(11,11,11,0.10);
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --gridline: #e1e0d9;
+    --baseline: #c3c2b7;
+    --series-1: #2a78d6;
+    --series-1-soft: #cde2fb;
+    --series-1-dim: #c7cdd6;
+    --accent-red: #e34948;
+    --tipo-coleta: #2a78d6;
+    --tipo-deslocamento: #eb6834;
+    --tipo-entrega: #1baf7a;
+    --tipo-transferencia: #eda100;
+    --status-aceito: #d5457f;
+    --status-chegada: #008300;
+    --status-deslocamento: #4a3aa7;
+    --status-programada: #c0392b;
+    --status-recusado: #2a78d6;
+    --status-reentrega: #eb6834;
+    --status-atendimento: #0e8a8a;
+    --pie-1: #2a78d6;
+    --pie-2: #eb6834;
+    --pie-3: #1baf7a;
+    --pie-4: #eda100;
+    --pie-5: #e87ba4;
+    --pie-6: #008300;
+    --pie-7: #4a3aa7;
+    --pie-other: #b9b8b0;
+    --pie-dim: rgba(11,11,11,0.12);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d0d0d;
+      --surface: #1a1a19;
+      --surface-raised: #212120;
+      --border: rgba(255,255,255,0.10);
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --gridline: #2c2c2a;
+      --baseline: #383835;
+      --series-1: #3987e5;
+      --series-1-soft: #184f95;
+      --series-1-dim: #3a3f47;
+      --accent-red: #e66767;
+      --tipo-coleta: #3987e5;
+      --tipo-deslocamento: #d95926;
+      --tipo-entrega: #199e70;
+      --tipo-transferencia: #c98500;
+      --status-aceito: #d55181;
+      --status-chegada: #1fa31f;
+      --status-deslocamento: #9085e9;
+      --status-programada: #e66767;
+      --status-recusado: #3987e5;
+      --status-reentrega: #d95926;
+    --status-atendimento: #2fb3b3;
+      --pie-1: #3987e5;
+      --pie-2: #d95926;
+      --pie-3: #199e70;
+      --pie-4: #c98500;
+      --pie-5: #d55181;
+      --pie-6: #1fa31f;
+      --pie-7: #9085e9;
+      --pie-other: #4a4a46;
+      --pie-dim: rgba(255,255,255,0.10);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-raised: #212120;
+    --border: rgba(255,255,255,0.10);
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --baseline: #383835;
+    --series-1: #3987e5;
+    --series-1-soft: #184f95;
+    --series-1-dim: #3a3f47;
+    --accent-red: #e66767;
+    --tipo-coleta: #3987e5;
+    --tipo-deslocamento: #d95926;
+    --tipo-entrega: #199e70;
+    --tipo-transferencia: #c98500;
+    --status-aceito: #d55181;
+    --status-chegada: #1fa31f;
+    --status-deslocamento: #9085e9;
+    --status-programada: #e66767;
+    --status-recusado: #3987e5;
+    --status-reentrega: #d95926;
+    --status-atendimento: #2fb3b3;
+    --pie-1: #3987e5;
+    --pie-2: #d95926;
+    --pie-3: #199e70;
+    --pie-4: #c98500;
+    --pie-5: #d55181;
+    --pie-6: #1fa31f;
+    --pie-7: #9085e9;
+    --pie-other: #4a4a46;
+    --pie-dim: rgba(255,255,255,0.10);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding-inline: 16px;
+    padding-block: 28px 48px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  header.page-head { margin-bottom: 28px; }
+  .eyebrow {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--series-1);
+  }
+  h1 {
+    font-size: clamp(22px, 4vw, 30px);
+    margin: 4px 0 6px;
+    text-wrap: balance;
+  }
+  .subtitle { color: var(--text-secondary); font-size: 14px; max-width: 62ch; }
+
+  .filter-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .filter-bar-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .filter-bar-controls {
+    display: flex;
+    align-items: center;
+    gap: 14px 28px;
+    flex-wrap: wrap;
+  }
+  .period-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .period-btn {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border: none;
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .period-btn + .period-btn { border-left: 1px solid var(--border); }
+  .period-btn.is-active {
+    background: var(--series-1);
+    color: #ffffff;
+  }
+  .period-btn:hover:not(.is-active) { background: var(--border); }
+  .filter-bar .filter-row select { min-width: 105px; }
+  .filter-bar .filter-row { gap: 6px; }
+  .filter-bar-controls { gap: 12px 14px; }
+  .clear-btn {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 12px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--series-1);
+    cursor: pointer;
+  }
+  .clear-btn:hover { background: var(--border); }
+  .filter-bar-note {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+  }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 22px;
+  }
+  @media (max-width: 640px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  }
+  .kpi {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    min-width: 0;
+  }
+  .kpi .value {
+    font-size: 28px;
+    font-weight: 700;
+    font-variant-numeric: proportional-nums;
+  }
+  .kpi .label {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  section.card {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 20px 22px;
+    margin-top: 20px;
+    min-width: 0;
+  }
+  section.card h2 {
+    font-size: 17px;
+    margin: 0 0 2px;
+  }
+  section.card .card-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+  }
+
+  .legend-card {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 32px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+  .legend-block { min-width: 0; }
+  .legend-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .legend-list { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .legend-dot {
+    width: 11px; height: 11px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .legend-dot-outline {
+    width: 10px; height: 10px;
+    border-radius: 999px;
+    border: 2px solid;
+    background: transparent;
+  }
+
+  .bk-table { display: flex; flex-direction: column; }
+  .bk-row {
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--gridline);
+  }
+  .bk-row:last-child { border-bottom: none; }
+  .bk-name-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .bk-name {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  .bk-total {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .bk-total b { font-size: 14px; color: var(--text-primary); }
+  .bk-empty {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    padding: 18px 4px;
+    text-align: center;
+  }
+
+  /* A própria barra é dividida em segmentos coloridos — um segmento por
+     valor de Tipo de Manifesto / Status do Atendimento, proporcional à
+     quantidade, tudo na mesma linha do responsável/motorista. */
+  .bk-seg-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .bk-seg-group + .bk-seg-group { margin-top: 6px; }
+  .bk-seg-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    width: 40px;
+    flex-shrink: 0;
+  }
+  .bk-seg-bar {
+    flex: 1;
+    display: flex;
+    height: 22px;
+    border-radius: 5px;
+    overflow: hidden;
+    gap: 2px;
+    background: var(--gridline);
+    min-width: 0;
+  }
+  .bk-seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    min-width: 3px;
+  }
+  .bk-seg-dark-text { color: #1a1a19; }
+  @media (max-width: 640px) {
+    .bk-seg-label { width: 34px; font-size: 9.5px; }
+    .bk-seg { font-size: 9.5px; }
+  }
+
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .filter-row label { font-size: 13px; color: var(--text-secondary); }
+  .filter-row select {
+    font: inherit;
+    font-size: 13.5px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-primary);
+    min-width: 220px;
+    max-width: 100%;
+  }
+
+  .detail-placeholder {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    padding: 18px 4px;
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    margin-top: 16px;
+  }
+
+  .detail-table-wrap {
+    margin-top: 16px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .detail-placeholder { margin-bottom: 20px; }
+  table.detail {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    min-width: 600px;
+  }
+  table.detail th, table.detail td {
+    text-align: left;
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--gridline);
+    white-space: nowrap;
+  }
+  table.detail th {
+    font-size: 11.5px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 600;
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+  }
+  table.detail tbody tr:last-child td { border-bottom: none; }
+  table.detail tr.col-filter th {
+    position: static;
+    padding: 4px 6px 6px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  table.detail tr.col-filter select,
+  table.detail tr.col-filter input {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    width: 100%;
+    min-width: 64px;
+    padding: 3px 4px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--surface-raised);
+    color: var(--text-primary);
+  }
+  .col-filter-count {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--gridline);
+  }
+  .col-filter-clear {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--series-1);
+    cursor: pointer;
+  }
+  table.detail tbody tr:hover { background: var(--surface); }
+
+  /* ---------- regra001: banner de alerta discreto no rodapé ---------- */
+  .title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin: 4px 0 6px;
+  }
+  .title-row h1 { margin: 0; }
+  .alert-banner {
+    flex: 1 1 380px;
+    min-width: 0;
+    max-width: 100%;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-left: 4px solid #d98a00;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    font-size: 12.5px;
+    color: var(--text-primary);
+  }
+  .alert-banner.is-open { flex-basis: 100%; }
+  /* regra001: banner piscando para chamar a atenção (para ao abrir a lista) */
+  @keyframes alertBlink {
+    0%, 100% { background: var(--surface-raised); border-color: var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+    50% { background: #fff1d6; border-color: #d98a00; box-shadow: 0 0 0 3px rgba(217,138,0,0.35); }
+  }
+  .alert-banner.is-blinking { animation: alertBlink 1.2s ease-in-out infinite; border-left-color: #d98a00; }
+  :root[data-theme="dark"] .alert-banner.is-blinking { animation-name: alertBlinkDark; }
+  @keyframes alertBlinkDark {
+    0%, 100% { background: var(--surface-raised); box-shadow: none; }
+    50% { background: #4a3300; box-shadow: 0 0 0 3px rgba(217,138,0,0.45); }
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .alert-banner.is-blinking { animation-name: alertBlinkDark; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .alert-banner.is-blinking { animation: none; background: #fff1d6; }
+  }
+  .alert-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 2px 8px;
+    padding: 6px 8px 6px 10px;
+  }
+  .alert-head .alert-dot { grid-column: 1; grid-row: 1; }
+  .alert-head .alert-title { grid-column: 2; grid-row: 1; }
+  .alert-head .alert-count { grid-column: 2; grid-row: 2; font-size: 12px; }
+  .alert-head .alert-actions { grid-column: 3; grid-row: 1 / span 2; margin-left: 0; }
+  .alert-head .alert-send[hidden] { display: none; }
+  .alert-head .alert-send { grid-column: 2 / span 2; grid-row: 3; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; background: #d98a00; flex-shrink: 0; }
+  .alert-title { font-size: 12.5px; }
+  .alert-count { color: var(--text-secondary); }
+  .alert-actions { margin-left: auto; display: inline-flex; gap: 6px; }
+  .alert-btn {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--series-1);
+    cursor: pointer;
+  }
+  .alert-send-label { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; }
+  .alert-send-list { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+  .alert-confirm { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 2px 6px; border-radius: 6px; background: #e8f6ee; color: #14532d; }
+  .alert-yes { color: #ffffff; background: #1f9d55; border-color: #1f9d55; }
+  .alert-sent-info { font-size: 11.5px; color: var(--text-secondary); align-self: center; }
+  .alert-nowa { font-size: 11.5px; padding: 3px 8px; border-radius: 6px; border: 1px dashed #c0392b; color: #c0392b; background: transparent; white-space: nowrap; }
+  .alert-wa { text-decoration: none; color: #ffffff; background: #1f9d55; border-color: #1f9d55; white-space: nowrap; }
+  .alert-wa:hover { background: #18834a; }
+  .alert-select {
+    font: inherit;
+    font-size: 12px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-primary);
+    max-width: 190px;
+  }
+  .alert-actions { flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+  .alert-close { color: var(--text-secondary); font-size: 14px; line-height: 1; padding: 3px 8px; }
+  .alert-body {
+    max-height: 38vh;
+    overflow: auto;
+    padding-top: 0 !important;
+    border-top: 1px solid var(--gridline);
+    padding: 4px 12px 10px;
+  }
+  .alert-mot { padding: 8px 0 4px; border-bottom: 1px solid var(--gridline); }
+  .alert-mot:last-child { border-bottom: none; }
+  .alert-mot-name { font-weight: 700; margin-bottom: 4px; }
+  .alert-mot-name span { font-weight: 400; color: var(--text-secondary); }
+  .alert-table-wrap { overflow-x: auto; }
+  table.alert-table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 12px; table-layout: fixed; }
+  table.alert-table th, table.alert-table td { text-align: left; padding: 3px 8px 3px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  table.alert-table th { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); font-weight: 600; position: sticky; top: 0; background: var(--surface-raised); padding-top: 6px; z-index: 1; }
+  table.alert-table tr.alert-group td { font-weight: 700; padding-top: 9px; border-top: 1px solid var(--gridline); }
+  table.alert-table tr.alert-group td span { font-weight: 400; color: var(--text-secondary); }
+  table.alert-table tbody tr.alert-group:first-child td { border-top: none; }
+  table.alert-table td.alert-late { color: #b45f00; font-weight: 700; }
+
+  footer.page-foot {
+    margin-top: 26px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+</style>
+
+<header class="page-head">
+  <div class="eyebrow">Expresso Predileto · Torre de Controle</div>
+  <div class="title-row">
+    <h1>Serviços em aberto na Torre</h1>
+    <!-- regra001: motoristas com serviço "Programada" do dia e início vencido há 15+ min -->
+    <div id="regra001" class="alert-banner" role="status" aria-live="polite" hidden>
+      <div class="alert-head">
+        <span class="alert-dot" aria-hidden="true"></span>
+        <strong class="alert-title">Atenção: Motoristas em atraso para início do serviço no APP</strong>
+        <span class="alert-count" id="regra001-count"></span>
+        <span class="alert-actions">
+          <button type="button" class="alert-btn" id="regra001-toggle">Ver lista</button>
+          <button type="button" class="alert-btn alert-close" id="regra001-close" aria-label="Fechar alerta">×</button>
+        </span>
+        <span class="alert-send" id="regra001-send" hidden>
+          <span class="alert-send-label">Enviar por WhatsApp (1 mensagem por programador):</span>
+          <span class="alert-send-list" id="regra001-send-list"></span>
+        </span>
+      </div>
+      <div class="alert-body" id="regra001-body" hidden></div>
+    </div>
+  </div>
+  <p class="subtitle">Mural interativo dos atendimentos em aberto no Koepe, atualizado a cada hora (última atualização: 09/10/2026 às 15:04) — passe o mouse nas barras para ver os valores e use os filtros de cada seção para abrir os atendimentos por responsável, motorista ou status.</p>
+
+  <div class="card filter-bar">
+    <div class="filter-bar-title">Filtro principal</div>
+    <div class="filter-bar-controls">
+      <div class="period-toggle" id="period-toggle">
+        <button type="button" class="period-btn" data-period="dia">Dia</button>
+        <button type="button" class="period-btn is-active" data-period="ontem">Ontem</button>
+        <button type="button" class="period-btn" data-period="periodo" title="Período completo">Per. completo</button>
+      </div>
+      <div class="filter-row" style="margin-bottom:0;">
+        <label for="filial-emi-filter" title="Filial do programador (emissão). Ao filtrar, não entram os deslocamentos criados pelo próprio motorista.">Fil.Emissão:</label>
+        <select id="filial-emi-filter">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <div class="filter-row" style="margin-bottom:0;">
+        <label for="filial-vei-filter" title="Filial do veículo">Fil. Veículo:</label>
+        <select id="filial-vei-filter">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <div class="filter-row" style="margin-bottom:0;">
+        <label for="filial-mot-filter" title="Filial do motorista">Fil. Motorista:</label>
+        <select id="filial-mot-filter">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <div class="filter-row" style="margin-bottom:0;">
+        <label for="modelo-filter">Modelo:</label>
+        <select id="modelo-filter">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <button type="button" class="clear-btn" id="clear-filters">Limpar filtros</button>
+    </div>
+    <div class="filter-bar-note" id="filter-bar-note"></div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="value" id="kpi-total">–</div><div class="label">Total de atendimentos</div></div>
+    <div class="kpi"><div class="value" id="kpi-prog">–</div><div class="label">Responsáveis distintos (PROGRAMADOR)</div></div>
+    <div class="kpi"><div class="value" id="kpi-mot">–</div><div class="label">Motoristas distintos</div></div>
+    <div class="kpi"><div class="value" id="kpi-filiais">–</div><div class="label">Filiais de motorista distintas</div></div>
+  </div>
+</header>
+
+<section class="card legend-card">
+  <div class="legend-block">
+    <div class="legend-title">Tipo de Manifesto</div>
+    <div class="legend-list" id="legend-tipo"></div>
+  </div>
+  <div class="legend-block">
+    <div class="legend-title">Status do Atendimento</div>
+    <div class="legend-list" id="legend-status"></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Por Responsável (PROGRAMADOR)</h2>
+  <div class="card-sub">Período completo da base — ordenado do maior para o menor volume. Em cada linha: total de atendimentos e o detalhamento por Tipo de Manifesto e Status do Atendimento (cores conforme legenda acima).</div>
+  <div class="filter-row">
+    <label for="resp-filter">Filtrar por responsável:</label>
+    <select id="resp-filter">
+      <option value="">Todos</option>
+    </select>
+  </div>
+  <div id="resp-detail-placeholder" class="detail-placeholder">Selecione um responsável acima para ver todos os atendimentos dele no período.</div>
+  <div id="resp-detail-table-wrap" class="detail-table-wrap" hidden>
+    <table class="detail">
+      <thead>
+        <tr>
+          <th>ID</th><th>Tipo</th><th>Veículo</th><th>Modelo</th><th>Motorista</th><th title="Filial do veículo">Fil. Veíc.</th><th title="Filial do motorista">Fil. Mot.</th><th title="Cidade de origem">Cid.Org</th><th title="Cidade de destino">Cid.Dest</th><th>Início</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="resp-detail-tbody"></tbody>
+    </table>
+  </div>
+  <div class="bk-table" id="bk-resp"></div>
+</section>
+
+<section class="card">
+  <h2>Por Motorista</h2>
+  <div class="card-sub">Todos os motoristas distintos do período completo da base, ordenados por volume. Em cada linha: total de atendimentos e o detalhamento por Tipo de Manifesto e Status do Atendimento (cores conforme legenda acima).</div>
+  <div class="filter-row">
+    <label for="mot-filter">Filtrar por motorista:</label>
+    <select id="mot-filter">
+      <option value="">Todos</option>
+    </select>
+  </div>
+  <div id="mot-detail-placeholder" class="detail-placeholder">Selecione um motorista acima para ver todos os atendimentos dele no período.</div>
+  <div id="mot-detail-table-wrap" class="detail-table-wrap" hidden>
+    <table class="detail">
+      <thead>
+        <tr>
+          <th>ID</th><th>Tipo</th><th>Veículo</th><th>Modelo</th><th title="Responsável (Programador)">Resp.</th><th title="Filial do veículo">Fil. Veíc.</th><th title="Filial do motorista">Fil. Mot.</th><th title="Cidade de origem">Cid.Org</th><th title="Cidade de destino">Cid.Dest</th><th>Início</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="mot-detail-tbody"></tbody>
+    </table>
+  </div>
+  <div class="bk-table" id="bk-mot"></div>
+</section>
+
+<section class="card">
+  <h2>Por Status do Atendimento</h2>
+  <div class="card-sub">Todos os status distintos do período completo da base, ordenados por volume. Em cada linha: total de atendimentos e o detalhamento por Tipo de Manifesto e por Responsável (PROGRAMADOR) — cores conforme legenda de Tipo acima; responsáveis além dos 7 principais aparecem agrupados em "Outros".</div>
+  <div class="filter-row">
+    <label for="status-filter">Filtrar por status:</label>
+    <select id="status-filter">
+      <option value="">Todos</option>
+    </select>
+  </div>
+  <div id="status-detail-placeholder" class="detail-placeholder">Selecione um status acima para ver todos os atendimentos com esse status no período.</div>
+  <div id="status-detail-table-wrap" class="detail-table-wrap" hidden>
+    <table class="detail">
+      <thead>
+        <tr>
+          <th>ID</th><th>Tipo</th><th>Veículo</th><th>Modelo</th><th title="Responsável (Programador)">Resp.</th><th>Motorista</th><th title="Filial do veículo">Fil. Veíc.</th><th title="Filial do motorista">Fil. Mot.</th><th title="Cidade de origem">Cid.Org</th><th title="Cidade de destino">Cid.Dest</th><th>Início</th>
+        </tr>
+      </thead>
+      <tbody id="status-detail-tbody"></tbody>
+    </table>
+  </div>
+  <div class="bk-table" id="bk-status"></div>
+</section>
+
+<footer class="page-foot">Fonte: Koepe — atendimentos em aberto, exportação horária. Atualizado em 09/10/2026 às 15:04.</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var DATA = {"whatsapp": {}, "total_geral": 154, "total_ontem": 84, "ontem_date_label": "Total de atendimentos de ONTEM (08/10/2026):", "prog_period": [{"nome": "THIAGO CHAGAS BRAGA", "qtd": 28}, {"nome": "RAFAELA NUNES MONTEIRO", "qtd": 25}, {"nome": "LETICIA MATHIAS NEVES", "qtd": 20}, {"nome": "PRICILA TORRES SOUZA", "qtd": 13}, {"nome": "LUCIANO BOECHAT", "qtd": 8}, {"nome": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "qtd": 6}, {"nome": "CAMILA PEREIRA DA SILVA", "qtd": 5}, {"nome": "WANDERLEY MONTEIRO", "qtd": 5}, {"nome": "ELISANGELA ZAPPELLI F ROCHA", "qtd": 4}, {"nome": "HYGOR INACIO C NICOLINI", "qtd": 4}, {"nome": "JULIANA COUTO LIRIO", "qtd": 4}, {"nome": "ALMIR SILVA", "qtd": 3}, {"nome": "EDSON GONCALVES DOS SANTOS", "qtd": 3}, {"nome": "GERCICA MATOS DA COSTA", "qtd": 3}, {"nome": "EMERSON DOS SANTOS PEREIRA", "qtd": 2}, {"nome": "LEONE SETENTA", "qtd": 2}, {"nome": "LUCAS ALMEIDA MELO DA SILVA", "qtd": 2}, {"nome": "LUCIANO SILVA BOECHAT", "qtd": 2}, {"nome": "LUIZ CANDIDO", "qtd": 2}, {"nome": "ALEX SANDRO JESUS DOS SANTOS", "qtd": 1}, {"nome": "ALTAIR HENRIQUE CABRAL  DE OLIVEIRA NASCIMENTO", "qtd": 1}, {"nome": "ANDRE DE AQUINO MARIA", "qtd": 1}, {"nome": "CRISTIAN SOARES DE PAULA", "qtd": 1}, {"nome": "ELIZANGELA COSTA", "qtd": 1}, {"nome": "FILIPE GUILHERME MONTEIRO DE ARAUJO", "qtd": 1}, {"nome": "GABE DO NASCIMENTO JOSME", "qtd": 1}, {"nome": "HYGOR PIGNATON PEREIRA", "qtd": 1}, {"nome": "MARCELO NEVES DA VITORIA", "qtd": 1}, {"nome": "MARILSO SILVEIRA", "qtd": 1}, {"nome": "MAURO LIMA MACHADO", "qtd": 1}, {"nome": "MICHELLE DO NASCIMENTO", "qtd": 1}, {"nome": "PATRICK DA CRUZ SANTOS", "qtd": 1}], "ontem_prog": [{"nome": "THIAGO CHAGAS BRAGA", "qtd": 24}, {"nome": "RAFAELA NUNES MONTEIRO", "qtd": 19}, {"nome": "LETICIA MATHIAS NEVES", "qtd": 18}, {"nome": "CAMILA PEREIRA DA SILVA", "qtd": 4}, {"nome": "ALMIR SILVA", "qtd": 3}, {"nome": "EDSON GONCALVES DOS SANTOS", "qtd": 2}, {"nome": "ELISANGELA ZAPPELLI F ROCHA", "qtd": 2}, {"nome": "EMERSON DOS SANTOS PEREIRA", "qtd": 2}, {"nome": "GERCICA MATOS DA COSTA", "qtd": 2}, {"nome": "HYGOR INACIO C NICOLINI", "qtd": 2}, {"nome": "LEONE SETENTA", "qtd": 2}, {"nome": "ELIZANGELA COSTA", "qtd": 1}, {"nome": "GABE DO NASCIMENTO JOSME", "qtd": 1}, {"nome": "JULIANA COUTO LIRIO", "qtd": 1}, {"nome": "LUCIANO SILVA BOECHAT", "qtd": 1}], "ontem_records": [{"id": "104254", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104221", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "GUARULHOS", "filial_programador": ""}, {"id": "104222", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "SANTO ANDRE", "filial_programador": ""}, {"id": "104223", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104248", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104249", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104250", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104251", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "RIO DAS OSTRAS", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104252", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104253", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104220", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104256", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "RIO DAS OSTRAS", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104271", "programador": "ALMIR SILVA", "tipo": "ENTREGA", "motorista": "JOAO CARLOS DA CUNHA CAMPOS", "filial_veiculo": "RIO", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:50", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "NITEROI", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104275", "programador": "ALMIR SILVA", "tipo": "ENTREGA", "motorista": "OSEIAS DOS REIS ERNANDES FILHO", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 13:00", "status": "Programada", "placa": "SSA7F80", "modelo": "TRUCK 12T", "cidade_origem": "NITEROI", "cidade_destino": "SAO GONCALO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104283", "programador": "EMERSON DOS SANTOS PEREIRA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 13:05", "status": "Programada", "placa": "EVW4H85", "modelo": "UTL 0,3T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104286", "programador": "EMERSON DOS SANTOS PEREIRA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 13:20", "status": "Programada", "placa": "EVW4H85", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "RIO DE JANEIRO", "filial_programador": ""}, {"id": "104290", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "ADRIANO OLIVEIRA DOS SANTOS FAGUNDES", "filial_veiculo": "RIO", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 13:25", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "SAO PAULO", "cidade_destino": "SAO JOAO DE MERITI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104313", "programador": "THIAGO CHAGAS BRAGA", "tipo": "TRANSFERENCIA", "motorista": "", "filial_veiculo": "", "filial_motorista": "", "data_inicio": "08/10/2026 às 14:19", "status": "Programada", "placa": "TTR1G60", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "VITORIA", "filial_programador": ""}, {"id": "104361", "programador": "LEONE SETENTA", "tipo": "ENTREGA", "motorista": "ORLI OLIVEIRA COSTA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 15:13", "status": "Programada", "placa": "TTS5E38", "modelo": "RB 6X4", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": ""}, {"id": "104365", "programador": "LEONE SETENTA", "tipo": "ENTREGA", "motorista": "MARLON BENTO DOS SANTOS", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 15:18", "status": "Programada", "placa": "LUE7C03", "modelo": "RB 6X4", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": ""}, {"id": "104211", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104164", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104165", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104166", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104205", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "NITEROI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104206", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104207", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "NITEROI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104208", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104209", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "NITEROI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104210", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "NITEROI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104428", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "EZEQUIEL RAMOS MOUTA", "filial_veiculo": "MEA", "filial_motorista": "", "data_inicio": "08/10/2026 às 15:53", "status": "Programada", "placa": "RKG8A45", "modelo": "TOCO 9,0T", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "VESPASIANO", "filial_programador": ""}, {"id": "104212", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104213", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104214", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "NITEROI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104215", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "VITORIA", "cidade_destino": "VITORIA", "filial_programador": ""}, {"id": "104216", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "VILA VELHA", "filial_programador": ""}, {"id": "104217", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104218", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104219", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": ""}, {"id": "104486", "programador": "EDSON GONCALVES DOS SANTOS", "tipo": "ENTREGA", "motorista": "WENDERSON MERLO WAICHERT", "filial_veiculo": "VIX", "filial_motorista": "VIX", "data_inicio": "08/10/2026 às 17:42", "status": "Programada", "placa": "RJZ6G46", "modelo": "RB 6X2", "cidade_origem": "SERRA", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": "VITÓRIA"}, {"id": "104544", "programador": "CAMILA PEREIRA DA SILVA", "tipo": "ENTREGA", "motorista": "GUILHERME MARTINS SOARES", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 18:00", "status": "Programada", "placa": "SRA2B30", "modelo": "VUC 1,5T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104543", "programador": "CAMILA PEREIRA DA SILVA", "tipo": "ENTREGA", "motorista": "GUILHERME MARTINS SOARES", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 22:51", "status": "Programada", "placa": "SRA2B30", "modelo": "VUC 1,5T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104163", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DAS OSTRAS", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104375", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "JOSE ROBERTO DA SILVA TOLEDO", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 15:31", "status": "Chegada", "placa": "RIT9D70", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": ""}, {"id": "104108", "programador": "CAMILA PEREIRA DA SILVA", "tipo": "ENTREGA", "motorista": "BRUNO FERNANDES DE JESUS", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Atendimento", "placa": "SQV6D04", "modelo": "RB 6X2", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104138", "programador": "HYGOR INACIO C NICOLINI", "tipo": "COLETA", "motorista": "JESIMIEL MORAES DE SOUZA", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 08:00", "status": "Atendimento", "placa": "SSC2A45", "modelo": "TRUCK 12T", "cidade_origem": "SERRA", "cidade_destino": "", "filial_programador": "VITÓRIA"}, {"id": "104179", "programador": "ELISANGELA ZAPPELLI F ROCHA", "tipo": "COLETA", "motorista": "ORLI OLIVEIRA COSTA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 13:00", "status": "Atendimento", "placa": "TTS5E38", "modelo": "RB 6X4", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104306", "programador": "JULIANA COUTO LIRIO", "tipo": "ENTREGA", "motorista": "RONALDO CAMPOS DOS SANTOS", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 15:00", "status": "Atendimento", "placa": "SRE5D58", "modelo": "RB 6X2", "cidade_origem": "MACAE", "cidade_destino": "RIO DE JANEIRO", "filial_programador": ""}, {"id": "104136", "programador": "HYGOR INACIO C NICOLINI", "tipo": "COLETA", "motorista": "WENDERSON MERLO WAICHERT", "filial_veiculo": "VIX", "filial_motorista": "VIX", "data_inicio": "08/10/2026 às 08:00", "status": "Chegada", "placa": "RJZ6G46", "modelo": "RB 6X2", "cidade_origem": "SERRA", "cidade_destino": "", "filial_programador": "VITÓRIA"}, {"id": "104278", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "JOSE FRANCISCO M DA CUNHA", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 12:19", "status": "Chegada", "placa": "SQV7F79", "modelo": "RB 6X2", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "SERRA", "filial_programador": ""}, {"id": "104039", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "COLETA", "motorista": "OSEIAS DOS REIS ERNANDES FILHO", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 06:00", "status": "Deslocamento", "placa": "SSA7F80", "modelo": "TRUCK 12T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITERÓI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104167", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Deslocamento", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104307", "programador": "EDSON GONCALVES DOS SANTOS", "tipo": "TRANSFERENCIA", "motorista": "CARLOS MAGNO DE SOUZA GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 14:12", "status": "Deslocamento", "placa": "LTW6G22", "modelo": "VUC 1,5T", "cidade_origem": "VILA VELHA", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": "VITÓRIA"}, {"id": "104376", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "JOSE ROBERTO DA SILVA TOLEDO", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 15:31", "status": "Deslocamento", "placa": "RIT9D70", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": ""}, {"id": "104424", "programador": "GABE DO NASCIMENTO JOSME", "tipo": "TRANSFERENCIA", "motorista": "ERASMO OLIVEIRA DA SILVA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 16:16", "status": "Deslocamento", "placa": "RJZ4C26", "modelo": "TOCO 9,0T", "cidade_origem": "MACAE", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": "MACAÉ"}, {"id": "104128", "programador": "LUCIANO SILVA BOECHAT", "tipo": "ENTREGA", "motorista": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "08/10/2026 às 07:00", "status": "Aceito", "placa": "SRB5C72", "modelo": "VUC 1,5T", "cidade_origem": "GUARULHOS", "cidade_destino": "CAMPINAS", "filial_programador": "SÃO PAULO"}, {"id": "104157", "programador": "ELIZANGELA COSTA", "tipo": "COLETA", "motorista": "CLEBER DE SOUZA CORREA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 10:00", "status": "Aceito", "placa": "RJP4I71", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104292", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "BRENO LUIZ BAPTISTA NOLASCO", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 13:20", "status": "Aceito", "placa": "RJZ4C27", "modelo": "TOCO 9,0T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104366", "programador": "ALMIR SILVA", "tipo": "DESLOCAMENTO", "motorista": "WILCIMAR DO AMARAL FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 15:30", "status": "Aceito", "placa": "SRP0A45", "modelo": "TRUCK 12T", "cidade_origem": "MACAE", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": ""}, {"id": "104425", "programador": "GERCICA MATOS DA COSTA", "tipo": "ENTREGA", "motorista": "MARCOS VENICIO LACERDA BARBOSA", "filial_veiculo": "VIX", "filial_motorista": "VIX", "data_inicio": "08/10/2026 às 16:24", "status": "Deslocamento", "placa": "RKR8A05", "modelo": "RB 6X2", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "VITORIA", "filial_programador": "MACAÉ"}, {"id": "104123", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DAS OSTRAS", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104114", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104115", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104116", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104117", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104118", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104119", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "INDAIATUBA", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104120", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104121", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104122", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104113", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DAS OSTRAS", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104124", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104125", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104126", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "INDAIATUBA", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104127", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104186", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "COLETA", "motorista": "WANDERSON DOS SANTOS BATISTA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "SRC0G40", "modelo": "VUC 1,5T", "cidade_origem": "CASIMIRO DE ABREU", "cidade_destino": "NITERÓI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104160", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104161", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DAS OSTRAS", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104162", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104534", "programador": "GERCICA MATOS DA COSTA", "tipo": "ENTREGA", "motorista": "VALDINEI SILVA NUNES", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 19:37", "status": "Deslocamento", "placa": "RKC9H51", "modelo": "RB 6X2", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "VITORIA", "filial_programador": "MACAÉ"}, {"id": "104512", "programador": "ELISANGELA ZAPPELLI F ROCHA", "tipo": "COLETA", "motorista": "MARLON BENTO DOS SANTOS", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 20:00", "status": "Deslocamento", "placa": "LUE7C03", "modelo": "RB 6X4", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "MACAÉ", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104028", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "LUIZ CLAUDIO O DE OLIVEIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 06:00", "status": "Aceito", "placa": "RJQ3F02", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": ""}, {"id": "104107", "programador": "CAMILA PEREIRA DA SILVA", "tipo": "COLETA", "motorista": "ADRIANO OLIVEIRA DOS SANTOS FAGUNDES", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "SRN1C35", "modelo": "VUC 1,5T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104112", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}], "motoristas": [{"nome": "CARLOS ISRAEL LOPES", "qtd": 21}, {"nome": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "qtd": 16}, {"nome": "MARCELO SANTIAGO SOARES GAMA", "qtd": 16}, {"nome": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "qtd": 13}, {"nome": "", "qtd": 4}, {"nome": "ALEX SANDRO JESUS DOS SANTOS", "qtd": 4}, {"nome": "ORLI OLIVEIRA COSTA", "qtd": 4}, {"nome": "ADRIANO OLIVEIRA DOS SANTOS FAGUNDES", "qtd": 3}, {"nome": "MARCELO DE SOUZA FREITAS", "qtd": 3}, {"nome": "MARLON BENTO DOS SANTOS", "qtd": 3}, {"nome": "OSEIAS DOS REIS ERNANDES FILHO", "qtd": 3}, {"nome": "ADILSON SOARES REIS", "qtd": 2}, {"nome": "BRENO LUIZ BAPTISTA NOLASCO", "qtd": 2}, {"nome": "CARLOS MAGNO DE SOUZA GAMA", "qtd": 2}, {"nome": "ERASMO OLIVEIRA DA SILVA", "qtd": 2}, {"nome": "GUILHERME MARTINS SOARES", "qtd": 2}, {"nome": "JESIMIEL MORAES DE SOUZA", "qtd": 2}, {"nome": "JOHNNY PETERSON GOMES DA SILVA", "qtd": 2}, {"nome": "JORGE ALVES DA SILVA", "qtd": 2}, {"nome": "JOSE ROBERTO DA SILVA TOLEDO", "qtd": 2}, {"nome": "JOZIMAR DE OLIVEIRA TAVARES", "qtd": 2}, {"nome": "MARILSO SILVEIRA", "qtd": 2}, {"nome": "PATRICK DA CRUZ SANTOS", "qtd": 2}, {"nome": "TATIANE SANTOS DE PAULA", "qtd": 2}, {"nome": "WENDERSON MERLO WAICHERT", "qtd": 2}, {"nome": "WILCIMAR DO AMARAL FERREIRA", "qtd": 2}, {"nome": "ADAN MARTINS DOS SANTOS", "qtd": 1}, {"nome": "ALTAIR HENRIQUE CABRAL  DE OLIVEIRA NASCIMENTO", "qtd": 1}, {"nome": "ANDRE DE AQUINO MARIA", "qtd": 1}, {"nome": "BRUNO FERNANDES DE JESUS", "qtd": 1}, {"nome": "CLAUDIO DE ABREU", "qtd": 1}, {"nome": "CLEBER DE SOUZA CORREA", "qtd": 1}, {"nome": "CRISTIAN SOARES DE PAULA", "qtd": 1}, {"nome": "EDUARDO CAMPOS AZEVEDO", "qtd": 1}, {"nome": "EZEQUIEL RAMOS MOUTA", "qtd": 1}, {"nome": "FERNANDO LEONARDO PESSOA DE SOUZA", "qtd": 1}, {"nome": "FILIPE GUILHERME MONTEIRO DE ARAUJO", "qtd": 1}, {"nome": "FLORIANO ENEDINO DUARTE", "qtd": 1}, {"nome": "GILVAN LIVRAMENTO DE OLIVEIRA", "qtd": 1}, {"nome": "HERCULES TOMPSON LIMA", "qtd": 1}, {"nome": "HYGOR PIGNATON PEREIRA", "qtd": 1}, {"nome": "JACKSON LIMA DA COSTA", "qtd": 1}, {"nome": "JAILSON RAMOS VIDAL", "qtd": 1}, {"nome": "JOAO CARLOS DA CUNHA CAMPOS", "qtd": 1}, {"nome": "JOHN ANDERSON GADIOLI DE FREITAS", "qtd": 1}, {"nome": "JOSE FRANCISCO M DA CUNHA", "qtd": 1}, {"nome": "LEONAN VERDAN PINHEIRO", "qtd": 1}, {"nome": "LUIZ ALBERTO COSTA SIMAO", "qtd": 1}, {"nome": "LUIZ CLAUDIO O DE OLIVEIRA", "qtd": 1}, {"nome": "MARCELO MEDEIROS PAULA", "qtd": 1}, {"nome": "MARCELO NEVES DA VITORIA", "qtd": 1}, {"nome": "MARCOS ANDRE DO NASCIMENTO", "qtd": 1}, {"nome": "MARCOS VENICIO LACERDA BARBOSA", "qtd": 1}, {"nome": "RALPH WILIAN P DA SILVA", "qtd": 1}, {"nome": "RODRIGO CONCEICAO DE AZEVEDO", "qtd": 1}, {"nome": "RONALDO CAMPOS DOS SANTOS", "qtd": 1}, {"nome": "UBIRAJARA DE SOUZA CORREA", "qtd": 1}, {"nome": "VALDINEI SILVA NUNES", "qtd": 1}, {"nome": "VALTER LUCIO A AMORIM DA CUNHA", "qtd": 1}, {"nome": "WANDERSON DOS SANTOS BATISTA", "qtd": 1}], "all_records": [{"id": "104254", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104221", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "GUARULHOS", "filial_programador": ""}, {"id": "104222", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "SANTO ANDRE", "filial_programador": ""}, {"id": "104223", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104248", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104249", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104250", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104251", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "RIO DAS OSTRAS", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104252", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104253", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104220", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104256", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:06", "status": "Programada", "placa": "RKD4I49", "modelo": "RB 6X2", "cidade_origem": "RIO DAS OSTRAS", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104271", "programador": "ALMIR SILVA", "tipo": "ENTREGA", "motorista": "JOAO CARLOS DA CUNHA CAMPOS", "filial_veiculo": "RIO", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 11:50", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "NITEROI", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104275", "programador": "ALMIR SILVA", "tipo": "ENTREGA", "motorista": "OSEIAS DOS REIS ERNANDES FILHO", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 13:00", "status": "Programada", "placa": "SSA7F80", "modelo": "TRUCK 12T", "cidade_origem": "NITEROI", "cidade_destino": "SAO GONCALO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104283", "programador": "EMERSON DOS SANTOS PEREIRA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 13:05", "status": "Programada", "placa": "EVW4H85", "modelo": "UTL 0,3T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104286", "programador": "EMERSON DOS SANTOS PEREIRA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 13:20", "status": "Programada", "placa": "EVW4H85", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "RIO DE JANEIRO", "filial_programador": ""}, {"id": "104290", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "ADRIANO OLIVEIRA DOS SANTOS FAGUNDES", "filial_veiculo": "RIO", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 13:25", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "SAO PAULO", "cidade_destino": "SAO JOAO DE MERITI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104313", "programador": "THIAGO CHAGAS BRAGA", "tipo": "TRANSFERENCIA", "motorista": "", "filial_veiculo": "", "filial_motorista": "", "data_inicio": "08/10/2026 às 14:19", "status": "Programada", "placa": "TTR1G60", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "VITORIA", "filial_programador": ""}, {"id": "104361", "programador": "LEONE SETENTA", "tipo": "ENTREGA", "motorista": "ORLI OLIVEIRA COSTA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 15:13", "status": "Programada", "placa": "TTS5E38", "modelo": "RB 6X4", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": ""}, {"id": "104365", "programador": "LEONE SETENTA", "tipo": "ENTREGA", "motorista": "MARLON BENTO DOS SANTOS", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 15:18", "status": "Programada", "placa": "LUE7C03", "modelo": "RB 6X4", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": ""}, {"id": "104211", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104164", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104165", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104166", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104205", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "NITEROI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104206", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104207", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "NITEROI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104208", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104209", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "NITEROI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104210", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "NITEROI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104428", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "EZEQUIEL RAMOS MOUTA", "filial_veiculo": "MEA", "filial_motorista": "", "data_inicio": "08/10/2026 às 15:53", "status": "Programada", "placa": "RKG8A45", "modelo": "TOCO 9,0T", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "VESPASIANO", "filial_programador": ""}, {"id": "104212", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104213", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104214", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "NITEROI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104215", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "VITORIA", "cidade_destino": "VITORIA", "filial_programador": ""}, {"id": "104216", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "VILA VELHA", "filial_programador": ""}, {"id": "104217", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104218", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104219", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "CARLOS ISRAEL LOPES", "filial_veiculo": "RIO", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 10:26", "status": "Programada", "placa": "PPQ9017", "modelo": "UTL 0,3T", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": ""}, {"id": "104725", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "", "filial_veiculo": "", "filial_motorista": "", "data_inicio": "09/10/2026 às 12:31", "status": "Programada", "placa": "TTR1G60", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "VITORIA", "filial_programador": ""}, {"id": "104586", "programador": "LUCIANO BOECHAT", "tipo": "ENTREGA", "motorista": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 09:00", "status": "Programada", "placa": "SRM6F92", "modelo": "VUC 1,5T", "cidade_origem": "MACAE", "cidade_destino": "JANDIRA", "filial_programador": ""}, {"id": "104587", "programador": "LUCIANO BOECHAT", "tipo": "ENTREGA", "motorista": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 09:00", "status": "Programada", "placa": "SRM6F92", "modelo": "VUC 1,5T", "cidade_origem": "RIO DAS OSTRAS", "cidade_destino": "SOROCABA", "filial_programador": ""}, {"id": "104588", "programador": "LUCIANO BOECHAT", "tipo": "ENTREGA", "motorista": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 09:00", "status": "Programada", "placa": "SRM6F92", "modelo": "VUC 1,5T", "cidade_origem": "SAO GONCALO", "cidade_destino": "BARUERI", "filial_programador": ""}, {"id": "104589", "programador": "LUCIANO BOECHAT", "tipo": "ENTREGA", "motorista": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 09:00", "status": "Programada", "placa": "SRM6F92", "modelo": "VUC 1,5T", "cidade_origem": "PIRACICABA", "cidade_destino": "JANDIRA", "filial_programador": ""}, {"id": "104672", "programador": "WANDERLEY MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO DE SOUZA FREITAS", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "09/10/2026 às 10:32", "status": "Programada", "placa": "RJR7C09", "modelo": "TOCO 9,0T", "cidade_origem": "ITAQUAQUECETUBA", "cidade_destino": "MACAE", "filial_programador": "MACAÉ"}, {"id": "104673", "programador": "WANDERLEY MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO DE SOUZA FREITAS", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "09/10/2026 às 10:32", "status": "Programada", "placa": "RJR7C09", "modelo": "TOCO 9,0T", "cidade_origem": "ITAQUAQUECETUBA", "cidade_destino": "MACAE", "filial_programador": "MACAÉ"}, {"id": "104674", "programador": "WANDERLEY MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO DE SOUZA FREITAS", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "09/10/2026 às 10:32", "status": "Programada", "placa": "RJR7C09", "modelo": "TOCO 9,0T", "cidade_origem": "INDAIATUBA", "cidade_destino": "MACAE", "filial_programador": "MACAÉ"}, {"id": "104683", "programador": "WANDERLEY MONTEIRO", "tipo": "ENTREGA", "motorista": "RALPH WILIAN P DA SILVA", "filial_veiculo": "SPO", "filial_motorista": "MEA", "data_inicio": "09/10/2026 às 11:03", "status": "Programada", "placa": "QRM8G03", "modelo": "TOCO 9,0T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "MACAE", "filial_programador": "MACAÉ"}, {"id": "104723", "programador": "THIAGO CHAGAS BRAGA", "tipo": "TRANSFERENCIA", "motorista": "", "filial_veiculo": "", "filial_motorista": "", "data_inicio": "09/10/2026 às 12:27", "status": "Programada", "placa": "TTR1G60", "modelo": "UTL 0,3T", "cidade_origem": "MACAE", "cidade_destino": "VITORIA", "filial_programador": ""}, {"id": "104585", "programador": "LUCIANO BOECHAT", "tipo": "ENTREGA", "motorista": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 09:00", "status": "Programada", "placa": "SRM6F92", "modelo": "VUC 1,5T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "JANDIRA", "filial_programador": ""}, {"id": "104727", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "", "filial_veiculo": "", "filial_motorista": "", "data_inicio": "09/10/2026 às 12:31", "status": "Programada", "placa": "TTR1G60", "modelo": "UTL 0,3T", "cidade_origem": "SANTOS", "cidade_destino": "VITORIA", "filial_programador": ""}, {"id": "104733", "programador": "MICHELLE DO NASCIMENTO", "tipo": "ENTREGA", "motorista": "JOHN ANDERSON GADIOLI DE FREITAS", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 12:46", "status": "Programada", "placa": "SQV1D84", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104574", "programador": "LUCAS ALMEIDA MELO DA SILVA", "tipo": "COLETA", "motorista": "ADILSON SOARES REIS", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 13:00", "status": "Programada", "placa": "RJF6I79", "modelo": "SR 14M 3E", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104742", "programador": "EDSON GONCALVES DOS SANTOS", "tipo": "TRANSFERENCIA", "motorista": "JESIMIEL MORAES DE SOUZA", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "09/10/2026 às 13:25", "status": "Programada", "placa": "SSC2A45", "modelo": "TRUCK 12T", "cidade_origem": "VILA VELHA", "cidade_destino": "MACAE", "filial_programador": "VITÓRIA"}, {"id": "104768", "programador": "CAMILA PEREIRA DA SILVA", "tipo": "ENTREGA", "motorista": "RODRIGO CONCEICAO DE AZEVEDO", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 14:28", "status": "Programada", "placa": "SRS7F04", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104763", "programador": "MAURO LIMA MACHADO", "tipo": "ENTREGA", "motorista": "FLORIANO ENEDINO DUARTE", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 14:36", "status": "Programada", "placa": "SRS7J58", "modelo": "RB 6X2", "cidade_origem": "RIO DAS OSTRAS", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": ""}, {"id": "104769", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCOS ANDRE DO NASCIMENTO", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "09/10/2026 às 14:46", "status": "Programada", "placa": "SRG2J41", "modelo": "TOCO 9,0T", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104720", "programador": "LUCAS ALMEIDA MELO DA SILVA", "tipo": "COLETA", "motorista": "LUIZ ALBERTO COSTA SIMAO", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 15:00", "status": "Programada", "placa": "RJE6G59", "modelo": "TOCO 9,0T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104550", "programador": "PRICILA TORRES SOUZA", "tipo": "COLETA", "motorista": "JORGE ALVES DA SILVA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 08:00", "status": "Programada", "placa": "RJT8B80", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "MACAÉ", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104486", "programador": "EDSON GONCALVES DOS SANTOS", "tipo": "ENTREGA", "motorista": "WENDERSON MERLO WAICHERT", "filial_veiculo": "VIX", "filial_motorista": "VIX", "data_inicio": "08/10/2026 às 17:42", "status": "Programada", "placa": "RJZ6G46", "modelo": "RB 6X2", "cidade_origem": "SERRA", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": "VITÓRIA"}, {"id": "104544", "programador": "CAMILA PEREIRA DA SILVA", "tipo": "ENTREGA", "motorista": "GUILHERME MARTINS SOARES", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 18:00", "status": "Programada", "placa": "SRA2B30", "modelo": "VUC 1,5T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104543", "programador": "CAMILA PEREIRA DA SILVA", "tipo": "ENTREGA", "motorista": "GUILHERME MARTINS SOARES", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 22:51", "status": "Programada", "placa": "SRA2B30", "modelo": "VUC 1,5T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104458", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "JOHNNY PETERSON GOMES DA SILVA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 04:30", "status": "Programada", "placa": "SRB5C10", "modelo": "VUC 1,5T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104559", "programador": "PRICILA TORRES SOUZA", "tipo": "COLETA", "motorista": "VALTER LUCIO A AMORIM DA CUNHA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 06:00", "status": "Programada", "placa": "SRN8I05", "modelo": "RB 6X2", "cidade_origem": "NITERÓI", "cidade_destino": "", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104502", "programador": "LUIZ CANDIDO", "tipo": "COLETA", "motorista": "OSEIAS DOS REIS ERNANDES FILHO", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 07:00", "status": "Programada", "placa": "SSA7F80", "modelo": "TRUCK 12T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104490", "programador": "ELISANGELA ZAPPELLI F ROCHA", "tipo": "COLETA", "motorista": "ORLI OLIVEIRA COSTA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 08:00", "status": "Programada", "placa": "TTS5E38", "modelo": "RB 6X4", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104513", "programador": "ELISANGELA ZAPPELLI F ROCHA", "tipo": "COLETA", "motorista": "ORLI OLIVEIRA COSTA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 08:00", "status": "Programada", "placa": "TTS5E38", "modelo": "RB 6X4", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104545", "programador": "LETICIA MATHIAS NEVES", "tipo": "TRANSFERENCIA", "motorista": "ERASMO OLIVEIRA DA SILVA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 08:00", "status": "Programada", "placa": "RJZ4C26", "modelo": "TOCO 9,0T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104163", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DAS OSTRAS", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104551", "programador": "PRICILA TORRES SOUZA", "tipo": "COLETA", "motorista": "UBIRAJARA DE SOUZA CORREA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 08:00", "status": "Programada", "placa": "RJG6H37", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "MACAÉ", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104553", "programador": "PRICILA TORRES SOUZA", "tipo": "COLETA", "motorista": "GILVAN LIVRAMENTO DE OLIVEIRA", "filial_veiculo": "CXA", "filial_motorista": "", "data_inicio": "09/10/2026 às 08:00", "status": "Programada", "placa": "SQV6D04", "modelo": "RB 6X2", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104556", "programador": "PRICILA TORRES SOUZA", "tipo": "COLETA", "motorista": "EDUARDO CAMPOS AZEVEDO", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 08:00", "status": "Programada", "placa": "QRM7G63", "modelo": "TOCO 9,0T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104561", "programador": "PRICILA TORRES SOUZA", "tipo": "COLETA", "motorista": "ADILSON SOARES REIS", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 08:00", "status": "Programada", "placa": "RJF6I79", "modelo": "SR 14M 3E", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104675", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "COLETA", "motorista": "JORGE ALVES DA SILVA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 08:00", "status": "Programada", "placa": "SRA2B30", "modelo": "VUC 1,5T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104748", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "COLETA", "motorista": "CARLOS MAGNO DE SOUZA GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 08:00", "status": "Programada", "placa": "LTW6G22", "modelo": "VUC 1,5T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104468", "programador": "JULIANA COUTO LIRIO", "tipo": "COLETA", "motorista": "TATIANE SANTOS DE PAULA", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "09/10/2026 às 08:30", "status": "Programada", "placa": "SRT9J78", "modelo": "SR 14,5M 4E", "cidade_origem": "SÃO JOÃO DA BARRA", "cidade_destino": "GUAPIMIRIM", "filial_programador": "MACAÉ"}, {"id": "104584", "programador": "LUCIANO BOECHAT", "tipo": "ENTREGA", "motorista": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 09:00", "status": "Programada", "placa": "SRM6F92", "modelo": "VUC 1,5T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "OSASCO", "filial_programador": ""}, {"id": "104375", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "JOSE ROBERTO DA SILVA TOLEDO", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 15:31", "status": "Chegada", "placa": "RIT9D70", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": ""}, {"id": "104767", "programador": "MARCELO NEVES DA VITORIA", "tipo": "DESLOCAMENTO", "motorista": "MARCELO NEVES DA VITORIA", "filial_veiculo": "VIX", "filial_motorista": "VIX", "data_inicio": "09/10/2026 às 14:59", "status": "Aceito", "placa": "RJI7F07", "modelo": "VUC 1,5T", "cidade_origem": "VITORIA", "cidade_destino": "CAMPO GRANDE", "filial_programador": "VITÓRIA"}, {"id": "104108", "programador": "CAMILA PEREIRA DA SILVA", "tipo": "ENTREGA", "motorista": "BRUNO FERNANDES DE JESUS", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Atendimento", "placa": "SQV6D04", "modelo": "RB 6X2", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104138", "programador": "HYGOR INACIO C NICOLINI", "tipo": "COLETA", "motorista": "JESIMIEL MORAES DE SOUZA", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 08:00", "status": "Atendimento", "placa": "SSC2A45", "modelo": "TRUCK 12T", "cidade_origem": "SERRA", "cidade_destino": "", "filial_programador": "VITÓRIA"}, {"id": "104179", "programador": "ELISANGELA ZAPPELLI F ROCHA", "tipo": "COLETA", "motorista": "ORLI OLIVEIRA COSTA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 13:00", "status": "Atendimento", "placa": "TTS5E38", "modelo": "RB 6X4", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104306", "programador": "JULIANA COUTO LIRIO", "tipo": "ENTREGA", "motorista": "RONALDO CAMPOS DOS SANTOS", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 15:00", "status": "Atendimento", "placa": "SRE5D58", "modelo": "RB 6X2", "cidade_origem": "MACAE", "cidade_destino": "RIO DE JANEIRO", "filial_programador": ""}, {"id": "104499", "programador": "GERCICA MATOS DA COSTA", "tipo": "COLETA", "motorista": "MARCELO MEDEIROS PAULA", "filial_veiculo": "MEA", "filial_motorista": "", "data_inicio": "09/10/2026 às 08:00", "status": "Atendimento", "placa": "LUE7J07", "modelo": "VUC 1,5T", "cidade_origem": "MACAÉ", "cidade_destino": "MACAÉ", "filial_programador": "MACAÉ"}, {"id": "104576", "programador": "JULIANA COUTO LIRIO", "tipo": "COLETA", "motorista": "TATIANE SANTOS DE PAULA", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "09/10/2026 às 08:00", "status": "Atendimento", "placa": "RJS5A13", "modelo": "RB 6X2", "cidade_origem": "SÃO JOÃO DA BARRA", "cidade_destino": "GUAPIMIRIM", "filial_programador": "MACAÉ"}, {"id": "104136", "programador": "HYGOR INACIO C NICOLINI", "tipo": "COLETA", "motorista": "WENDERSON MERLO WAICHERT", "filial_veiculo": "VIX", "filial_motorista": "VIX", "data_inicio": "08/10/2026 às 08:00", "status": "Chegada", "placa": "RJZ6G46", "modelo": "RB 6X2", "cidade_origem": "SERRA", "cidade_destino": "", "filial_programador": "VITÓRIA"}, {"id": "104278", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "JOSE FRANCISCO M DA CUNHA", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 12:19", "status": "Chegada", "placa": "SQV7F79", "modelo": "RB 6X2", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "SERRA", "filial_programador": ""}, {"id": "104759", "programador": "ALEX SANDRO JESUS DOS SANTOS", "tipo": "DESLOCAMENTO", "motorista": "ALEX SANDRO JESUS DOS SANTOS", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 14:48", "status": "Aceito", "placa": "SRM6F92", "modelo": "VUC 1,5T", "cidade_origem": "GUARATINGUETA", "cidade_destino": "GUARULHOS", "filial_programador": "SÃO PAULO"}, {"id": "104500", "programador": "LUIZ CANDIDO", "tipo": "COLETA", "motorista": "ADAN MARTINS DOS SANTOS", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 07:00", "status": "Chegada", "placa": "SRS7J78", "modelo": "RB 6X2", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104570", "programador": "HYGOR INACIO C NICOLINI", "tipo": "ENTREGA", "motorista": "CLAUDIO DE ABREU", "filial_veiculo": "VIX", "filial_motorista": "VIX", "data_inicio": "09/10/2026 às 07:16", "status": "Chegada", "placa": "RKQ5D65", "modelo": "RB 6X2", "cidade_origem": "SERRA", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": "VITÓRIA"}, {"id": "104538", "programador": "PRICILA TORRES SOUZA", "tipo": "ENTREGA", "motorista": "JOZIMAR DE OLIVEIRA TAVARES", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 08:00", "status": "Chegada", "placa": "RJO7B87", "modelo": "TOCO 9,0T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104540", "programador": "PRICILA TORRES SOUZA", "tipo": "ENTREGA", "motorista": "JOZIMAR DE OLIVEIRA TAVARES", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 08:00", "status": "Chegada", "placa": "RJO7B87", "modelo": "TOCO 9,0T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104039", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "COLETA", "motorista": "OSEIAS DOS REIS ERNANDES FILHO", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 06:00", "status": "Deslocamento", "placa": "SSA7F80", "modelo": "TRUCK 12T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITERÓI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104167", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Deslocamento", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104307", "programador": "EDSON GONCALVES DOS SANTOS", "tipo": "TRANSFERENCIA", "motorista": "CARLOS MAGNO DE SOUZA GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 14:12", "status": "Deslocamento", "placa": "LTW6G22", "modelo": "VUC 1,5T", "cidade_origem": "VILA VELHA", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": "VITÓRIA"}, {"id": "104376", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "JOSE ROBERTO DA SILVA TOLEDO", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 15:31", "status": "Deslocamento", "placa": "RIT9D70", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": ""}, {"id": "104424", "programador": "GABE DO NASCIMENTO JOSME", "tipo": "TRANSFERENCIA", "motorista": "ERASMO OLIVEIRA DA SILVA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 16:16", "status": "Deslocamento", "placa": "RJZ4C26", "modelo": "TOCO 9,0T", "cidade_origem": "MACAE", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": "MACAÉ"}, {"id": "104557", "programador": "PRICILA TORRES SOUZA", "tipo": "COLETA", "motorista": "ADRIANO OLIVEIRA DOS SANTOS FAGUNDES", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 08:00", "status": "Aceito", "placa": "SRC0G40", "modelo": "VUC 1,5T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "SÃO JOÃO DA BARRA", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104128", "programador": "LUCIANO SILVA BOECHAT", "tipo": "ENTREGA", "motorista": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "08/10/2026 às 07:00", "status": "Aceito", "placa": "SRB5C72", "modelo": "VUC 1,5T", "cidade_origem": "GUARULHOS", "cidade_destino": "CAMPINAS", "filial_programador": "SÃO PAULO"}, {"id": "104157", "programador": "ELIZANGELA COSTA", "tipo": "COLETA", "motorista": "CLEBER DE SOUZA CORREA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 10:00", "status": "Aceito", "placa": "RJP4I71", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104292", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "BRENO LUIZ BAPTISTA NOLASCO", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 13:20", "status": "Aceito", "placa": "RJZ4C27", "modelo": "TOCO 9,0T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104366", "programador": "ALMIR SILVA", "tipo": "DESLOCAMENTO", "motorista": "WILCIMAR DO AMARAL FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 15:30", "status": "Aceito", "placa": "SRP0A45", "modelo": "TRUCK 12T", "cidade_origem": "MACAE", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": ""}, {"id": "104457", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "JOHNNY PETERSON GOMES DA SILVA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 04:30", "status": "Aceito", "placa": "SRB5C10", "modelo": "VUC 1,5T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "SAO JOAO DA BARRA", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104560", "programador": "PRICILA TORRES SOUZA", "tipo": "COLETA", "motorista": "FERNANDO LEONARDO PESSOA DE SOUZA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 06:00", "status": "Aceito", "placa": "RJV1A55", "modelo": "RB 6X2", "cidade_origem": "NITERÓI", "cidade_destino": "", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104569", "programador": "LUCIANO BOECHAT", "tipo": "ENTREGA", "motorista": "ALEX SANDRO JESUS DOS SANTOS", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 07:05", "status": "Aceito", "placa": "SRM6F92", "modelo": "VUC 1,5T", "cidade_origem": "MACAE", "cidade_destino": "MAUA", "filial_programador": ""}, {"id": "104566", "programador": "LUCIANO SILVA BOECHAT", "tipo": "COLETA", "motorista": "ALEX SANDRO JESUS DOS SANTOS", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 07:30", "status": "Aceito", "placa": "SRM6F92", "modelo": "VUC 1,5T", "cidade_origem": "GUARULHOS", "cidade_destino": "GUARULHOS", "filial_programador": "SÃO PAULO"}, {"id": "104549", "programador": "PRICILA TORRES SOUZA", "tipo": "COLETA", "motorista": "JACKSON LIMA DA COSTA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 08:00", "status": "Aceito", "placa": "RKU6C18", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NOVA IGUAÇU", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104425", "programador": "GERCICA MATOS DA COSTA", "tipo": "ENTREGA", "motorista": "MARCOS VENICIO LACERDA BARBOSA", "filial_veiculo": "VIX", "filial_motorista": "VIX", "data_inicio": "08/10/2026 às 16:24", "status": "Deslocamento", "placa": "RKR8A05", "modelo": "RB 6X2", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "VITORIA", "filial_programador": "MACAÉ"}, {"id": "104562", "programador": "PRICILA TORRES SOUZA", "tipo": "COLETA", "motorista": "WILCIMAR DO AMARAL FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 08:00", "status": "Aceito", "placa": "SRP0A45", "modelo": "TRUCK 12T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104473", "programador": "JULIANA COUTO LIRIO", "tipo": "COLETA", "motorista": "MARILSO SILVEIRA", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "09/10/2026 às 08:30", "status": "Aceito", "placa": "SRM9D84", "modelo": "RB 6X2", "cidade_origem": "SÃO JOÃO DA BARRA", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": "MACAÉ"}, {"id": "104615", "programador": "WANDERLEY MONTEIRO", "tipo": "COLETA", "motorista": "BRENO LUIZ BAPTISTA NOLASCO", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 09:45", "status": "Aceito", "placa": "RJZ4C27", "modelo": "TOCO 9,0T", "cidade_origem": "MACAÉ", "cidade_destino": "MACAÉ", "filial_programador": "MACAÉ"}, {"id": "104631", "programador": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "tipo": "DESLOCAMENTO", "motorista": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 10:25", "status": "Aceito", "placa": "SRB5C72", "modelo": "VUC 1,5T", "cidade_origem": "OSASCO", "cidade_destino": "JANDIRA", "filial_programador": "SÃO PAULO"}, {"id": "104724", "programador": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "tipo": "DESLOCAMENTO", "motorista": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 12:43", "status": "Aceito", "placa": "SRB5C72", "modelo": "VUC 1,5T", "cidade_origem": "BARUERI", "cidade_destino": "SOROCABA", "filial_programador": "SÃO PAULO"}, {"id": "104728", "programador": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "tipo": "DESLOCAMENTO", "motorista": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 12:45", "status": "Aceito", "placa": "SRB5C72", "modelo": "VUC 1,5T", "cidade_origem": "BARUERI", "cidade_destino": "SOROCABA", "filial_programador": "SÃO PAULO"}, {"id": "104751", "programador": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "tipo": "DESLOCAMENTO", "motorista": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 14:15", "status": "Aceito", "placa": "SRB5C72", "modelo": "VUC 1,5T", "cidade_origem": "SOROCABA", "cidade_destino": "GUARULHOS", "filial_programador": "SÃO PAULO"}, {"id": "104752", "programador": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "tipo": "DESLOCAMENTO", "motorista": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 14:17", "status": "Aceito", "placa": "SRB5C72", "modelo": "VUC 1,5T", "cidade_origem": "SOROCABA", "cidade_destino": "GUARULHOS", "filial_programador": "SÃO PAULO"}, {"id": "104123", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DAS OSTRAS", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104114", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104115", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104116", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104117", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104118", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104119", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "INDAIATUBA", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104120", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104121", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104122", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104113", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DAS OSTRAS", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104124", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104125", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104126", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "INDAIATUBA", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104127", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "BARUERI", "cidade_destino": "NITEROI", "filial_programador": ""}, {"id": "104186", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "COLETA", "motorista": "WANDERSON DOS SANTOS BATISTA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "SRC0G40", "modelo": "VUC 1,5T", "cidade_origem": "CASIMIRO DE ABREU", "cidade_destino": "NITERÓI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104160", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104161", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DAS OSTRAS", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104162", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "ENTREGA", "motorista": "MARCELO SANTIAGO SOARES GAMA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 09:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104695", "programador": "ALTAIR HENRIQUE CABRAL  DE OLIVEIRA NASCIMENTO", "tipo": "DESLOCAMENTO", "motorista": "ALTAIR HENRIQUE CABRAL  DE OLIVEIRA NASCIMENTO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 11:44", "status": "Deslocamento", "placa": "SRG2J40", "modelo": "TOCO 9,0T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "GUARULHOS", "filial_programador": "SÃO PAULO"}, {"id": "104534", "programador": "GERCICA MATOS DA COSTA", "tipo": "ENTREGA", "motorista": "VALDINEI SILVA NUNES", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "08/10/2026 às 19:37", "status": "Deslocamento", "placa": "RKC9H51", "modelo": "RB 6X2", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "VITORIA", "filial_programador": "MACAÉ"}, {"id": "104512", "programador": "ELISANGELA ZAPPELLI F ROCHA", "tipo": "COLETA", "motorista": "MARLON BENTO DOS SANTOS", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 20:00", "status": "Deslocamento", "placa": "LUE7C03", "modelo": "RB 6X4", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "MACAÉ", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104514", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "MARLON BENTO DOS SANTOS", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 06:00", "status": "Deslocamento", "placa": "LUE7C03", "modelo": "RB 6X4", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104567", "programador": "HYGOR INACIO C NICOLINI", "tipo": "ENTREGA", "motorista": "HERCULES TOMPSON LIMA", "filial_veiculo": "VIX", "filial_motorista": "VIX", "data_inicio": "09/10/2026 às 07:00", "status": "Deslocamento", "placa": "RJE2J65", "modelo": "RB 6X2", "cidade_origem": "VITORIA", "cidade_destino": "MACAE", "filial_programador": "VITÓRIA"}, {"id": "104568", "programador": "LUCIANO BOECHAT", "tipo": "ENTREGA", "motorista": "ALEX SANDRO JESUS DOS SANTOS", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 07:05", "status": "Deslocamento", "placa": "SRM6F92", "modelo": "VUC 1,5T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "MAUA", "filial_programador": ""}, {"id": "104563", "programador": "PRICILA TORRES SOUZA", "tipo": "COLETA", "motorista": "LEONAN VERDAN PINHEIRO", "filial_veiculo": "CXA", "filial_motorista": "", "data_inicio": "09/10/2026 às 08:00", "status": "Deslocamento", "placa": "SSC2A28", "modelo": "TRUCK 12T", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104613", "programador": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "tipo": "DESLOCAMENTO", "motorista": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 09:52", "status": "Deslocamento", "placa": "SRB5C72", "modelo": "VUC 1,5T", "cidade_origem": "OSASCO", "cidade_destino": "OSASCO", "filial_programador": "SÃO PAULO"}, {"id": "104633", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "JAILSON RAMOS VIDAL", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "09/10/2026 às 10:11", "status": "Deslocamento", "placa": "QRH8I97", "modelo": "TRUCK 12T", "cidade_origem": "SAO JOAO DA BARRA", "cidade_destino": "MACAE", "filial_programador": ""}, {"id": "104624", "programador": "FILIPE GUILHERME MONTEIRO DE ARAUJO", "tipo": "DESLOCAMENTO", "motorista": "FILIPE GUILHERME MONTEIRO DE ARAUJO", "filial_veiculo": "SPO", "filial_motorista": "SPO", "data_inicio": "09/10/2026 às 10:21", "status": "Deslocamento", "placa": "SRR8H50", "modelo": "UTL 0,3T", "cidade_origem": "RIBEIRAO PRETO", "cidade_destino": "GUARULHOS", "filial_programador": "SÃO PAULO"}, {"id": "104028", "programador": "THIAGO CHAGAS BRAGA", "tipo": "ENTREGA", "motorista": "LUIZ CLAUDIO O DE OLIVEIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 06:00", "status": "Aceito", "placa": "RJQ3F02", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": ""}, {"id": "104699", "programador": "CRISTIAN SOARES DE PAULA", "tipo": "DESLOCAMENTO", "motorista": "CRISTIAN SOARES DE PAULA", "filial_veiculo": "VIX", "filial_motorista": "VIX", "data_inicio": "09/10/2026 às 11:45", "status": "Deslocamento", "placa": "RJX6I60", "modelo": "RB 6X2", "cidade_origem": "", "cidade_destino": "VILA VELHA", "filial_programador": "VITÓRIA"}, {"id": "104743", "programador": "ANDRE DE AQUINO MARIA", "tipo": "DESLOCAMENTO", "motorista": "ANDRE DE AQUINO MARIA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 13:41", "status": "Deslocamento", "placa": "SRV2A57", "modelo": "RB 6X2", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "RIO DE JANEIRO"}, {"id": "104750", "programador": "PATRICK DA CRUZ SANTOS", "tipo": "DESLOCAMENTO", "motorista": "PATRICK DA CRUZ SANTOS", "filial_veiculo": "MEA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 14:00", "status": "Deslocamento", "placa": "SRP1C86", "modelo": "VUC 1,5T", "cidade_origem": "", "cidade_destino": "DUQUE DE CAXIAS", "filial_programador": "RIO DE JANEIRO"}, {"id": "104757", "programador": "HYGOR PIGNATON PEREIRA", "tipo": "DESLOCAMENTO", "motorista": "HYGOR PIGNATON PEREIRA", "filial_veiculo": "VIX", "filial_motorista": "VIX", "data_inicio": "09/10/2026 às 14:33", "status": "Deslocamento", "placa": "QRM8G32", "modelo": "TOCO 9,0T", "cidade_origem": "VILA VELHA", "cidade_destino": "GUARAPARI", "filial_programador": "VITÓRIA"}, {"id": "104791", "programador": "MARILSO SILVEIRA", "tipo": "DESLOCAMENTO", "motorista": "MARILSO SILVEIRA", "filial_veiculo": "MEA", "filial_motorista": "MEA", "data_inicio": "09/10/2026 às 15:10", "status": "Deslocamento", "placa": "SRM9D84", "modelo": "RB 6X2", "cidade_origem": "", "cidade_destino": "MACAÉ", "filial_programador": "MACAÉ"}, {"id": "104616", "programador": "RAFAELA NUNES MONTEIRO", "tipo": "COLETA", "motorista": "PATRICK DA CRUZ SANTOS", "filial_veiculo": "MEA", "filial_motorista": "RIO", "data_inicio": "09/10/2026 às 09:00", "status": "Parado", "placa": "SRP1C86", "modelo": "VUC 1,5T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "RIO DE JANEIRO", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104107", "programador": "CAMILA PEREIRA DA SILVA", "tipo": "COLETA", "motorista": "ADRIANO OLIVEIRA DOS SANTOS FAGUNDES", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "SRN1C35", "modelo": "VUC 1,5T", "cidade_origem": "DUQUE DE CAXIAS", "cidade_destino": "", "filial_programador": "DUQUE DE CAXIAS"}, {"id": "104112", "programador": "LETICIA MATHIAS NEVES", "tipo": "ENTREGA", "motorista": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "filial_veiculo": "CXA", "filial_motorista": "RIO", "data_inicio": "08/10/2026 às 08:00", "status": "Programada", "placa": "RKC6G52", "modelo": "RB 6X2", "cidade_origem": "RIO DE JANEIRO", "cidade_destino": "NITEROI", "filial_programador": ""}]};
+
+  var BREAKDOWN = {"tipo_order": ["COLETA", "DESLOCAMENTO", "ENTREGA", "TRANSFERENCIA"], "status_order": ["Aceito", "Atendimento", "Chegada", "Deslocamento", "Programada", "Parado"], "prog_detail": [{"nome": "THIAGO CHAGAS BRAGA", "total": 28, "tipo": [{"nome": "ENTREGA", "qtd": 26}, {"nome": "TRANSFERENCIA", "qtd": 2}], "status": [{"nome": "Programada", "qtd": 24}, {"nome": "Aceito", "qtd": 2}, {"nome": "Chegada", "qtd": 1}, {"nome": "Deslocamento", "qtd": 1}]}, {"nome": "RAFAELA NUNES MONTEIRO", "total": 25, "tipo": [{"nome": "ENTREGA", "qtd": 20}, {"nome": "COLETA", "qtd": 5}], "status": [{"nome": "Programada", "qtd": 21}, {"nome": "Deslocamento", "qtd": 2}, {"nome": "Aceito", "qtd": 1}, {"nome": "Parado", "qtd": 1}]}, {"nome": "LETICIA MATHIAS NEVES", "total": 20, "tipo": [{"nome": "ENTREGA", "qtd": 19}, {"nome": "TRANSFERENCIA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 17}, {"nome": "Deslocamento", "qtd": 2}, {"nome": "Chegada", "qtd": 1}]}, {"nome": "PRICILA TORRES SOUZA", "total": 13, "tipo": [{"nome": "COLETA", "qtd": 11}, {"nome": "ENTREGA", "qtd": 2}], "status": [{"nome": "Programada", "qtd": 6}, {"nome": "Aceito", "qtd": 4}, {"nome": "Chegada", "qtd": 2}, {"nome": "Deslocamento", "qtd": 1}]}, {"nome": "LUCIANO BOECHAT", "total": 8, "tipo": [{"nome": "ENTREGA", "qtd": 8}], "status": [{"nome": "Programada", "qtd": 6}, {"nome": "Aceito", "qtd": 1}, {"nome": "Deslocamento", "qtd": 1}]}, {"nome": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "total": 6, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 6}], "status": [{"nome": "Aceito", "qtd": 5}, {"nome": "Deslocamento", "qtd": 1}]}, {"nome": "WANDERLEY MONTEIRO", "total": 5, "tipo": [{"nome": "ENTREGA", "qtd": 4}, {"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 4}, {"nome": "Aceito", "qtd": 1}]}, {"nome": "CAMILA PEREIRA DA SILVA", "total": 5, "tipo": [{"nome": "ENTREGA", "qtd": 4}, {"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 4}, {"nome": "Atendimento", "qtd": 1}]}, {"nome": "ELISANGELA ZAPPELLI F ROCHA", "total": 4, "tipo": [{"nome": "COLETA", "qtd": 4}], "status": [{"nome": "Programada", "qtd": 2}, {"nome": "Atendimento", "qtd": 1}, {"nome": "Deslocamento", "qtd": 1}]}, {"nome": "JULIANA COUTO LIRIO", "total": 4, "tipo": [{"nome": "COLETA", "qtd": 3}, {"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Atendimento", "qtd": 2}, {"nome": "Aceito", "qtd": 1}, {"nome": "Programada", "qtd": 1}]}, {"nome": "HYGOR INACIO C NICOLINI", "total": 4, "tipo": [{"nome": "COLETA", "qtd": 2}, {"nome": "ENTREGA", "qtd": 2}], "status": [{"nome": "Chegada", "qtd": 2}, {"nome": "Atendimento", "qtd": 1}, {"nome": "Deslocamento", "qtd": 1}]}, {"nome": "ALMIR SILVA", "total": 3, "tipo": [{"nome": "ENTREGA", "qtd": 2}, {"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 2}, {"nome": "Aceito", "qtd": 1}]}, {"nome": "EDSON GONCALVES DOS SANTOS", "total": 3, "tipo": [{"nome": "TRANSFERENCIA", "qtd": 2}, {"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 2}, {"nome": "Deslocamento", "qtd": 1}]}, {"nome": "GERCICA MATOS DA COSTA", "total": 3, "tipo": [{"nome": "ENTREGA", "qtd": 2}, {"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 2}, {"nome": "Atendimento", "qtd": 1}]}, {"nome": "EMERSON DOS SANTOS PEREIRA", "total": 2, "tipo": [{"nome": "ENTREGA", "qtd": 2}], "status": [{"nome": "Programada", "qtd": 2}]}, {"nome": "LEONE SETENTA", "total": 2, "tipo": [{"nome": "ENTREGA", "qtd": 2}], "status": [{"nome": "Programada", "qtd": 2}]}, {"nome": "LUCAS ALMEIDA MELO DA SILVA", "total": 2, "tipo": [{"nome": "COLETA", "qtd": 2}], "status": [{"nome": "Programada", "qtd": 2}]}, {"nome": "LUIZ CANDIDO", "total": 2, "tipo": [{"nome": "COLETA", "qtd": 2}], "status": [{"nome": "Chegada", "qtd": 1}, {"nome": "Programada", "qtd": 1}]}, {"nome": "LUCIANO SILVA BOECHAT", "total": 2, "tipo": [{"nome": "COLETA", "qtd": 1}, {"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Aceito", "qtd": 2}]}, {"nome": "MICHELLE DO NASCIMENTO", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "MAURO LIMA MACHADO", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "MARCELO NEVES DA VITORIA", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Aceito", "qtd": 1}]}, {"nome": "ALEX SANDRO JESUS DOS SANTOS", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Aceito", "qtd": 1}]}, {"nome": "GABE DO NASCIMENTO JOSME", "total": 1, "tipo": [{"nome": "TRANSFERENCIA", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "ELIZANGELA COSTA", "total": 1, "tipo": [{"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Aceito", "qtd": 1}]}, {"nome": "ALTAIR HENRIQUE CABRAL  DE OLIVEIRA NASCIMENTO", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "FILIPE GUILHERME MONTEIRO DE ARAUJO", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "CRISTIAN SOARES DE PAULA", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "ANDRE DE AQUINO MARIA", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "PATRICK DA CRUZ SANTOS", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "HYGOR PIGNATON PEREIRA", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "MARILSO SILVEIRA", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}], "mot_detail": [{"nome": "CARLOS ISRAEL LOPES", "total": 21, "tipo": [{"nome": "ENTREGA", "qtd": 21}], "status": [{"nome": "Programada", "qtd": 21}]}, {"nome": "MARCELO SANTIAGO SOARES GAMA", "total": 16, "tipo": [{"nome": "ENTREGA", "qtd": 16}], "status": [{"nome": "Programada", "qtd": 15}, {"nome": "Deslocamento", "qtd": 1}]}, {"nome": "ELIAS ARMENDANE CASTELO BRANCO FERREIRA", "total": 16, "tipo": [{"nome": "ENTREGA", "qtd": 16}], "status": [{"nome": "Programada", "qtd": 16}]}, {"nome": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "total": 13, "tipo": [{"nome": "ENTREGA", "qtd": 7}, {"nome": "DESLOCAMENTO", "qtd": 6}], "status": [{"nome": "Aceito", "qtd": 6}, {"nome": "Programada", "qtd": 6}, {"nome": "Deslocamento", "qtd": 1}]}, {"nome": "", "total": 4, "tipo": [{"nome": "ENTREGA", "qtd": 2}, {"nome": "TRANSFERENCIA", "qtd": 2}], "status": [{"nome": "Programada", "qtd": 4}]}, {"nome": "ORLI OLIVEIRA COSTA", "total": 4, "tipo": [{"nome": "COLETA", "qtd": 3}, {"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 3}, {"nome": "Atendimento", "qtd": 1}]}, {"nome": "ALEX SANDRO JESUS DOS SANTOS", "total": 4, "tipo": [{"nome": "ENTREGA", "qtd": 2}, {"nome": "COLETA", "qtd": 1}, {"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Aceito", "qtd": 3}, {"nome": "Deslocamento", "qtd": 1}]}, {"nome": "OSEIAS DOS REIS ERNANDES FILHO", "total": 3, "tipo": [{"nome": "COLETA", "qtd": 2}, {"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 2}, {"nome": "Deslocamento", "qtd": 1}]}, {"nome": "ADRIANO OLIVEIRA DOS SANTOS FAGUNDES", "total": 3, "tipo": [{"nome": "COLETA", "qtd": 2}, {"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 2}, {"nome": "Aceito", "qtd": 1}]}, {"nome": "MARLON BENTO DOS SANTOS", "total": 3, "tipo": [{"nome": "ENTREGA", "qtd": 2}, {"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 2}, {"nome": "Programada", "qtd": 1}]}, {"nome": "MARCELO DE SOUZA FREITAS", "total": 3, "tipo": [{"nome": "ENTREGA", "qtd": 3}], "status": [{"nome": "Programada", "qtd": 3}]}, {"nome": "ADILSON SOARES REIS", "total": 2, "tipo": [{"nome": "COLETA", "qtd": 2}], "status": [{"nome": "Programada", "qtd": 2}]}, {"nome": "JESIMIEL MORAES DE SOUZA", "total": 2, "tipo": [{"nome": "COLETA", "qtd": 1}, {"nome": "TRANSFERENCIA", "qtd": 1}], "status": [{"nome": "Atendimento", "qtd": 1}, {"nome": "Programada", "qtd": 1}]}, {"nome": "JORGE ALVES DA SILVA", "total": 2, "tipo": [{"nome": "COLETA", "qtd": 2}], "status": [{"nome": "Programada", "qtd": 2}]}, {"nome": "WENDERSON MERLO WAICHERT", "total": 2, "tipo": [{"nome": "COLETA", "qtd": 1}, {"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Chegada", "qtd": 1}, {"nome": "Programada", "qtd": 1}]}, {"nome": "GUILHERME MARTINS SOARES", "total": 2, "tipo": [{"nome": "ENTREGA", "qtd": 2}], "status": [{"nome": "Programada", "qtd": 2}]}, {"nome": "JOHNNY PETERSON GOMES DA SILVA", "total": 2, "tipo": [{"nome": "ENTREGA", "qtd": 2}], "status": [{"nome": "Aceito", "qtd": 1}, {"nome": "Programada", "qtd": 1}]}, {"nome": "ERASMO OLIVEIRA DA SILVA", "total": 2, "tipo": [{"nome": "TRANSFERENCIA", "qtd": 2}], "status": [{"nome": "Deslocamento", "qtd": 1}, {"nome": "Programada", "qtd": 1}]}, {"nome": "CARLOS MAGNO DE SOUZA GAMA", "total": 2, "tipo": [{"nome": "COLETA", "qtd": 1}, {"nome": "TRANSFERENCIA", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}, {"nome": "Programada", "qtd": 1}]}, {"nome": "TATIANE SANTOS DE PAULA", "total": 2, "tipo": [{"nome": "COLETA", "qtd": 2}], "status": [{"nome": "Atendimento", "qtd": 1}, {"nome": "Programada", "qtd": 1}]}, {"nome": "JOSE ROBERTO DA SILVA TOLEDO", "total": 2, "tipo": [{"nome": "ENTREGA", "qtd": 2}], "status": [{"nome": "Chegada", "qtd": 1}, {"nome": "Deslocamento", "qtd": 1}]}, {"nome": "JOZIMAR DE OLIVEIRA TAVARES", "total": 2, "tipo": [{"nome": "ENTREGA", "qtd": 2}], "status": [{"nome": "Chegada", "qtd": 2}]}, {"nome": "BRENO LUIZ BAPTISTA NOLASCO", "total": 2, "tipo": [{"nome": "COLETA", "qtd": 1}, {"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Aceito", "qtd": 2}]}, {"nome": "WILCIMAR DO AMARAL FERREIRA", "total": 2, "tipo": [{"nome": "COLETA", "qtd": 1}, {"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Aceito", "qtd": 2}]}, {"nome": "MARILSO SILVEIRA", "total": 2, "tipo": [{"nome": "COLETA", "qtd": 1}, {"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Aceito", "qtd": 1}, {"nome": "Deslocamento", "qtd": 1}]}, {"nome": "PATRICK DA CRUZ SANTOS", "total": 2, "tipo": [{"nome": "COLETA", "qtd": 1}, {"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}, {"nome": "Parado", "qtd": 1}]}, {"nome": "JOAO CARLOS DA CUNHA CAMPOS", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "EZEQUIEL RAMOS MOUTA", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "RALPH WILIAN P DA SILVA", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "JOHN ANDERSON GADIOLI DE FREITAS", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "RODRIGO CONCEICAO DE AZEVEDO", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "FLORIANO ENEDINO DUARTE", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "MARCOS ANDRE DO NASCIMENTO", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "LUIZ ALBERTO COSTA SIMAO", "total": 1, "tipo": [{"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "VALTER LUCIO A AMORIM DA CUNHA", "total": 1, "tipo": [{"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "UBIRAJARA DE SOUZA CORREA", "total": 1, "tipo": [{"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "GILVAN LIVRAMENTO DE OLIVEIRA", "total": 1, "tipo": [{"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "EDUARDO CAMPOS AZEVEDO", "total": 1, "tipo": [{"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "MARCELO NEVES DA VITORIA", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Aceito", "qtd": 1}]}, {"nome": "BRUNO FERNANDES DE JESUS", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Atendimento", "qtd": 1}]}, {"nome": "RONALDO CAMPOS DOS SANTOS", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Atendimento", "qtd": 1}]}, {"nome": "MARCELO MEDEIROS PAULA", "total": 1, "tipo": [{"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Atendimento", "qtd": 1}]}, {"nome": "JOSE FRANCISCO M DA CUNHA", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Chegada", "qtd": 1}]}, {"nome": "ADAN MARTINS DOS SANTOS", "total": 1, "tipo": [{"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Chegada", "qtd": 1}]}, {"nome": "CLAUDIO DE ABREU", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Chegada", "qtd": 1}]}, {"nome": "CLEBER DE SOUZA CORREA", "total": 1, "tipo": [{"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Aceito", "qtd": 1}]}, {"nome": "FERNANDO LEONARDO PESSOA DE SOUZA", "total": 1, "tipo": [{"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Aceito", "qtd": 1}]}, {"nome": "JACKSON LIMA DA COSTA", "total": 1, "tipo": [{"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Aceito", "qtd": 1}]}, {"nome": "MARCOS VENICIO LACERDA BARBOSA", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "WANDERSON DOS SANTOS BATISTA", "total": 1, "tipo": [{"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Programada", "qtd": 1}]}, {"nome": "ALTAIR HENRIQUE CABRAL  DE OLIVEIRA NASCIMENTO", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "VALDINEI SILVA NUNES", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "HERCULES TOMPSON LIMA", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "LEONAN VERDAN PINHEIRO", "total": 1, "tipo": [{"nome": "COLETA", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "JAILSON RAMOS VIDAL", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "FILIPE GUILHERME MONTEIRO DE ARAUJO", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "LUIZ CLAUDIO O DE OLIVEIRA", "total": 1, "tipo": [{"nome": "ENTREGA", "qtd": 1}], "status": [{"nome": "Aceito", "qtd": 1}]}, {"nome": "CRISTIAN SOARES DE PAULA", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "ANDRE DE AQUINO MARIA", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}, {"nome": "HYGOR PIGNATON PEREIRA", "total": 1, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 1}], "status": [{"nome": "Deslocamento", "qtd": 1}]}], "status_detail": [{"nome": "Programada", "total": 98, "tipo": [{"nome": "ENTREGA", "qtd": 78}, {"nome": "COLETA", "qtd": 16}, {"nome": "TRANSFERENCIA", "qtd": 4}], "prog": [{"nome": "THIAGO CHAGAS BRAGA", "qtd": 24}, {"nome": "RAFAELA NUNES MONTEIRO", "qtd": 21}, {"nome": "LETICIA MATHIAS NEVES", "qtd": 17}, {"nome": "LUCIANO BOECHAT", "qtd": 6}, {"nome": "PRICILA TORRES SOUZA", "qtd": 6}, {"nome": "CAMILA PEREIRA DA SILVA", "qtd": 4}, {"nome": "WANDERLEY MONTEIRO", "qtd": 4}, {"nome": "ALMIR SILVA", "qtd": 2}, {"nome": "EDSON GONCALVES DOS SANTOS", "qtd": 2}, {"nome": "ELISANGELA ZAPPELLI F ROCHA", "qtd": 2}, {"nome": "EMERSON DOS SANTOS PEREIRA", "qtd": 2}, {"nome": "LEONE SETENTA", "qtd": 2}, {"nome": "LUCAS ALMEIDA MELO DA SILVA", "qtd": 2}, {"nome": "JULIANA COUTO LIRIO", "qtd": 1}, {"nome": "LUIZ CANDIDO", "qtd": 1}, {"nome": "MAURO LIMA MACHADO", "qtd": 1}, {"nome": "MICHELLE DO NASCIMENTO", "qtd": 1}]}, {"nome": "Aceito", "total": 21, "tipo": [{"nome": "COLETA", "qtd": 8}, {"nome": "DESLOCAMENTO", "qtd": 8}, {"nome": "ENTREGA", "qtd": 5}], "prog": [{"nome": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "qtd": 5}, {"nome": "PRICILA TORRES SOUZA", "qtd": 4}, {"nome": "LUCIANO SILVA BOECHAT", "qtd": 2}, {"nome": "THIAGO CHAGAS BRAGA", "qtd": 2}, {"nome": "ALEX SANDRO JESUS DOS SANTOS", "qtd": 1}, {"nome": "ALMIR SILVA", "qtd": 1}, {"nome": "ELIZANGELA COSTA", "qtd": 1}, {"nome": "JULIANA COUTO LIRIO", "qtd": 1}, {"nome": "LUCIANO BOECHAT", "qtd": 1}, {"nome": "MARCELO NEVES DA VITORIA", "qtd": 1}, {"nome": "RAFAELA NUNES MONTEIRO", "qtd": 1}, {"nome": "WANDERLEY MONTEIRO", "qtd": 1}]}, {"nome": "Deslocamento", "total": 21, "tipo": [{"nome": "DESLOCAMENTO", "qtd": 8}, {"nome": "ENTREGA", "qtd": 8}, {"nome": "COLETA", "qtd": 3}, {"nome": "TRANSFERENCIA", "qtd": 2}], "prog": [{"nome": "GERCICA MATOS DA COSTA", "qtd": 2}, {"nome": "LETICIA MATHIAS NEVES", "qtd": 2}, {"nome": "RAFAELA NUNES MONTEIRO", "qtd": 2}, {"nome": "ALTAIR HENRIQUE CABRAL  DE OLIVEIRA NASCIMENTO", "qtd": 1}, {"nome": "ANDRE DE AQUINO MARIA", "qtd": 1}, {"nome": "AUGUSTO ALENCAR MONTEIRO DE ARAUJO", "qtd": 1}, {"nome": "CRISTIAN SOARES DE PAULA", "qtd": 1}, {"nome": "EDSON GONCALVES DOS SANTOS", "qtd": 1}, {"nome": "ELISANGELA ZAPPELLI F ROCHA", "qtd": 1}, {"nome": "FILIPE GUILHERME MONTEIRO DE ARAUJO", "qtd": 1}, {"nome": "GABE DO NASCIMENTO JOSME", "qtd": 1}, {"nome": "HYGOR INACIO C NICOLINI", "qtd": 1}, {"nome": "HYGOR PIGNATON PEREIRA", "qtd": 1}, {"nome": "LUCIANO BOECHAT", "qtd": 1}, {"nome": "MARILSO SILVEIRA", "qtd": 1}, {"nome": "PATRICK DA CRUZ SANTOS", "qtd": 1}, {"nome": "PRICILA TORRES SOUZA", "qtd": 1}, {"nome": "THIAGO CHAGAS BRAGA", "qtd": 1}]}, {"nome": "Chegada", "total": 7, "tipo": [{"nome": "ENTREGA", "qtd": 5}, {"nome": "COLETA", "qtd": 2}], "prog": [{"nome": "HYGOR INACIO C NICOLINI", "qtd": 2}, {"nome": "PRICILA TORRES SOUZA", "qtd": 2}, {"nome": "LETICIA MATHIAS NEVES", "qtd": 1}, {"nome": "LUIZ CANDIDO", "qtd": 1}, {"nome": "THIAGO CHAGAS BRAGA", "qtd": 1}]}, {"nome": "Atendimento", "total": 6, "tipo": [{"nome": "COLETA", "qtd": 4}, {"nome": "ENTREGA", "qtd": 2}], "prog": [{"nome": "JULIANA COUTO LIRIO", "qtd": 2}, {"nome": "CAMILA PEREIRA DA SILVA", "qtd": 1}, {"nome": "ELISANGELA ZAPPELLI F ROCHA", "qtd": 1}, {"nome": "GERCICA MATOS DA COSTA", "qtd": 1}, {"nome": "HYGOR INACIO C NICOLINI", "qtd": 1}]}, {"nome": "Parado", "total": 1, "tipo": [{"nome": "COLETA", "qtd": 1}], "prog": [{"nome": "RAFAELA NUNES MONTEIRO", "qtd": 1}]}]};
+
+  // ---------- helpers ----------
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+  function setText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  // ---------- datas: "ontem" vem da planilha; "hoje" é ontem + 1 dia, para o
+  // filtro principal continuar coerente mesmo que o painel seja aberto dias
+  // depois de gerado (não usamos o relógio do navegador) ----------
+  function parseBrDate(str) {
+    var m = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(str || '');
+    if (!m) return null;
+    return new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+  }
+  function formatBrDate(d) {
+    var dd = String(d.getDate()).padStart(2, '0');
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    return dd + '/' + mm + '/' + d.getFullYear();
+  }
+  function shortBrDate(str) {
+    var m = /^(\d{2}\/\d{2})/.exec(str || '');
+    return m ? m[1] : (str || '');
+  }
+  // ---------- filtros por coluna nas listagens de detalhe ----------
+  // Monta uma 2ª linha no cabeçalho com um filtro por coluna: lista suspensa
+  // quando a coluna tem poucos valores distintos, caixa de texto (contém) nos demais.
+  function buildColumnFilters(tbody) {
+    var table = tbody.parentElement;
+    var thead = table.querySelector('thead');
+    var old = thead.querySelector('tr.col-filter');
+    if (old) thead.removeChild(old);
+    var wrap = table.parentElement;
+    var counter = wrap.querySelector('.col-filter-count');
+    if (!counter) {
+      counter = document.createElement('div');
+      counter.className = 'col-filter-count';
+      var txt = document.createElement('span');
+      txt.className = 'col-filter-text';
+      counter.appendChild(txt);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'col-filter-clear';
+      btn.textContent = 'Limpar filtros da tabela';
+      counter.appendChild(btn);
+      wrap.insertBefore(counter, table);
+    }
+    var counterText = counter.querySelector('.col-filter-text');
+    var clearBtn = counter.querySelector('.col-filter-clear');
+    var rows = Array.prototype.slice.call(tbody.rows);
+    var nCols = thead.rows[0].cells.length;
+    var fr = document.createElement('tr');
+    fr.className = 'col-filter';
+    var controls = [];
+    function apply() {
+      var shown = 0;
+      rows.forEach(function (tr) {
+        var ok = controls.every(function (c, i) {
+          var v = c.value;
+          if (!v) return true;
+          var cell = (tr.cells[i].textContent || '');
+          return c.tagName === 'SELECT' ? cell === v : cell.toLowerCase().indexOf(v.toLowerCase()) !== -1;
+        });
+        tr.hidden = !ok;
+        if (ok) shown++;
+      });
+      var active = controls.some(function (c) { return c.value; });
+      counterText.textContent = active ? ('Mostrando ' + shown + ' de ' + rows.length + ' atendimento(s) — filtro por coluna ativo') : (rows.length + ' atendimento(s)');
+      clearBtn.hidden = !active;
+    }
+    for (var i = 0; i < nCols; i++) {
+      var th = document.createElement('th');
+      var vals = {};
+      rows.forEach(function (tr) { vals[tr.cells[i].textContent] = true; });
+      var keys = Object.keys(vals).sort();
+      var ctl;
+      if (i > 0 && keys.length <= 25) {
+        ctl = document.createElement('select');
+        var o = document.createElement('option'); o.value = ''; o.textContent = 'Todos'; ctl.appendChild(o);
+        keys.forEach(function (k) { var op = document.createElement('option'); op.value = k; op.textContent = k === '' ? '(vazio)' : k; ctl.appendChild(op); });
+        ctl.addEventListener('change', apply);
+      } else {
+        ctl = document.createElement('input');
+        ctl.type = 'search';
+        ctl.placeholder = 'filtrar…';
+        ctl.addEventListener('input', apply);
+      }
+      ctl.setAttribute('aria-label', 'Filtrar coluna ' + thead.rows[0].cells[i].textContent);
+      th.appendChild(ctl);
+      fr.appendChild(th);
+      controls.push(ctl);
+    }
+    thead.appendChild(fr);
+    clearBtn.onclick = function () { controls.forEach(function (c) { c.value = ''; }); apply(); };
+    apply();
+  }
+
+  // tabelas de detalhe: textos mais curtos para caber melhor na tela
+  var TIPO_CURTO = { COLETA: 'Coleta', ENTREGA: 'Entrega', DESLOCAMENTO: 'Desloc.', TRANSFERENCIA: 'Transf.' };
+  function tipoCurto(t) { return TIPO_CURTO[t] || t; }
+  function inicioCurto(s) {
+    var m = /^(\d{2}\/\d{2})\/\d{4}\s*(?:às)?\s*(\d{2}:\d{2})?/.exec(s || '');
+    return m ? (m[1] + (m[2] ? ' ' + m[2] : '')) : (s || '');
+  }
+  function recordDateStr(r) {
+    var m = /^(\d{2}\/\d{2}\/\d{4})/.exec((r && r.data_inicio) || '');
+    return m ? m[1] : null;
+  }
+
+  var ontemDateMatch = /\(([^)]+)\)/.exec(DATA.ontem_date_label || '');
+  var ontemDateStr = ontemDateMatch ? ontemDateMatch[1] : null;
+  var hojeDateStr = null;
+  var ontemDateObj = ontemDateStr ? parseBrDate(ontemDateStr) : null;
+  if (ontemDateObj) {
+    var hojeDateObj = new Date(ontemDateObj.getTime());
+    hojeDateObj.setDate(hojeDateObj.getDate() + 1);
+    hojeDateStr = formatBrDate(hojeDateObj);
+  }
+
+  // ---------- Tipo de Manifesto / Status do Atendimento: legenda + linhas com chips ----------
+  var TIPO_VAR = { COLETA: '--tipo-coleta', DESLOCAMENTO: '--tipo-deslocamento', ENTREGA: '--tipo-entrega', TRANSFERENCIA: '--tipo-transferencia' };
+  var STATUS_VAR = { Aceito: '--status-aceito', Chegada: '--status-chegada', Deslocamento: '--status-deslocamento', Programada: '--status-programada', Recusado: '--status-recusado', Reentrega: '--status-reentrega', Atendimento: '--status-atendimento' };
+
+  function renderLegend(containerId, order, varMap, abbrMap, style) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    order.forEach(function (name) {
+      var item = document.createElement('span');
+      item.className = 'legend-item';
+      var dot = document.createElement('span');
+      dot.className = 'legend-dot' + (style === 'outline' ? ' legend-dot-outline' : '');
+      var color = cssVar(varMap[name] || '--pie-other');
+      if (style === 'outline') {
+        dot.style.borderColor = color;
+      } else {
+        dot.style.background = color;
+      }
+      item.appendChild(dot);
+      var label = document.createElement('span');
+      label.textContent = abbrMap ? ((abbrMap[name] || name) + ' = ' + name) : name;
+      item.appendChild(label);
+      el.appendChild(item);
+    });
+  }
+
+  // Monta uma barra ÚNICA dividida em segmentos coloridos — cada segmento é
+  // um valor (Tipo ou Status), largura proporcional à quantidade, com o
+  // número dentro do segmento. Tudo na mesma linha do responsável/motorista.
+  function buildSegBar(entries, varMap, abbrMap, total) {
+    var bar = document.createElement('div');
+    bar.className = 'bk-seg-bar';
+    entries.forEach(function (e) {
+      var seg = document.createElement('div');
+      seg.className = 'bk-seg';
+      if (e.nome === 'TRANSFERENCIA') seg.classList.add('bk-seg-dark-text');
+      seg.style.background = cssVar(varMap[e.nome] || '--pie-other');
+      seg.style.flex = e.qtd + ' 0 0%';
+      seg.title = e.nome + ': ' + e.qtd + ' de ' + total;
+      // sem mapa de abreviação (status): mostra o nome completo
+      seg.textContent = (abbrMap ? (abbrMap[e.nome] || e.nome) : e.nome) + ' ' + e.qtd;
+      bar.appendChild(seg);
+    });
+    return bar;
+  }
+
+  // Agrupa uma lista de {nome, qtd} em Top N + "Outros" (reaproveita a mesma
+  // lógica das pizzas) — usado para a barra de Responsável dentro de cada
+  // linha de Status, já que um status pode ter muitos responsáveis distintos.
+  var ROW_PALETTE_VARS = ['--pie-1', '--pie-2', '--pie-3', '--pie-4', '--pie-5', '--pie-6', '--pie-7'];
+  function groupTopN(entries, topN) {
+    var sorted = entries.slice().sort(function (a, b) { return b.qtd - a.qtd; });
+    if (sorted.length <= topN) return sorted.map(function (e) { return { nome: e.nome, qtd: e.qtd }; });
+    var top = sorted.slice(0, topN);
+    var rest = sorted.slice(topN);
+    var otherQtd = rest.reduce(function (s, r) { return s + r.qtd; }, 0);
+    return top.concat([{ nome: 'Outros (' + rest.length + ')', qtd: otherQtd, isOther: true }]);
+  }
+
+  // Igual a buildSegBar, mas a cor de cada segmento vem de uma paleta por
+  // posição (não de um mapa fixo por nome) — para dimensões com muitos
+  // valores distintos, como Responsável dentro da barra de Status.
+  function buildSegBarRanked(entries, total) {
+    var bar = document.createElement('div');
+    bar.className = 'bk-seg-bar';
+    entries.forEach(function (e, i) {
+      var seg = document.createElement('div');
+      seg.className = 'bk-seg';
+      seg.style.background = e.isOther ? cssVar('--pie-other') : cssVar(ROW_PALETTE_VARS[i % ROW_PALETTE_VARS.length]);
+      seg.style.flex = e.qtd + ' 0 0%';
+      seg.title = e.nome + ': ' + e.qtd + ' de ' + total;
+      seg.textContent = e.nome + ' ' + e.qtd;
+      bar.appendChild(seg);
+    });
+    return bar;
+  }
+
+  function renderStatusBreakdown(containerId, rows) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    while (el.firstChild) el.removeChild(el.firstChild);
+    if (!rows.length) {
+      var empty = document.createElement('div');
+      empty.className = 'bk-empty';
+      empty.textContent = 'Nenhum atendimento encontrado para o filtro principal selecionado.';
+      el.appendChild(empty);
+      return;
+    }
+    rows.forEach(function (r) {
+      var row = document.createElement('div');
+      row.className = 'bk-row';
+
+      var nameRow = document.createElement('div');
+      nameRow.className = 'bk-name-row';
+      var nameEl = document.createElement('span');
+      nameEl.className = 'bk-name';
+      nameEl.textContent = r.nome;
+      nameEl.title = r.nome;
+      nameRow.appendChild(nameEl);
+      var totalEl = document.createElement('span');
+      totalEl.className = 'bk-total';
+      var totalB = document.createElement('b');
+      totalB.textContent = r.total;
+      totalEl.appendChild(document.createTextNode('Total: '));
+      totalEl.appendChild(totalB);
+      nameRow.appendChild(totalEl);
+      row.appendChild(nameRow);
+
+      var tipoGroup = document.createElement('div');
+      tipoGroup.className = 'bk-seg-group';
+      var tipoLabel = document.createElement('span');
+      tipoLabel.className = 'bk-seg-label';
+      tipoLabel.textContent = 'Tipo';
+      tipoGroup.appendChild(tipoLabel);
+      tipoGroup.appendChild(buildSegBar(r.tipo, TIPO_VAR, null, r.total));
+      row.appendChild(tipoGroup);
+
+      var progGroup = document.createElement('div');
+      progGroup.className = 'bk-seg-group';
+      var progLabel = document.createElement('span');
+      progLabel.className = 'bk-seg-label';
+      progLabel.textContent = 'Resp.';
+      progGroup.appendChild(progLabel);
+      progGroup.appendChild(buildSegBarRanked(groupTopN(r.prog, 7), r.total));
+      row.appendChild(progGroup);
+
+      el.appendChild(row);
+    });
+  }
+
+  function renderBreakdown(containerId, rows) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    while (el.firstChild) el.removeChild(el.firstChild);
+    if (!rows.length) {
+      var empty = document.createElement('div');
+      empty.className = 'bk-empty';
+      empty.textContent = 'Nenhum atendimento encontrado para o filtro principal selecionado.';
+      el.appendChild(empty);
+      return;
+    }
+    rows.forEach(function (r) {
+      var row = document.createElement('div');
+      row.className = 'bk-row';
+
+      var nameRow = document.createElement('div');
+      nameRow.className = 'bk-name-row';
+      var nameEl = document.createElement('span');
+      nameEl.className = 'bk-name';
+      nameEl.textContent = r.nome;
+      nameEl.title = r.nome;
+      nameRow.appendChild(nameEl);
+      var totalEl = document.createElement('span');
+      totalEl.className = 'bk-total';
+      totalEl.innerHTML = '';
+      var totalB = document.createElement('b');
+      totalB.textContent = r.total;
+      totalEl.appendChild(document.createTextNode('Total: '));
+      totalEl.appendChild(totalB);
+      nameRow.appendChild(totalEl);
+      row.appendChild(nameRow);
+
+      var tipoGroup = document.createElement('div');
+      tipoGroup.className = 'bk-seg-group';
+      var tipoLabel = document.createElement('span');
+      tipoLabel.className = 'bk-seg-label';
+      tipoLabel.textContent = 'Tipo';
+      tipoGroup.appendChild(tipoLabel);
+      tipoGroup.appendChild(buildSegBar(r.tipo, TIPO_VAR, null, r.total));
+      row.appendChild(tipoGroup);
+
+      var statusGroup = document.createElement('div');
+      statusGroup.className = 'bk-seg-group';
+      var statusLabel = document.createElement('span');
+      statusLabel.className = 'bk-seg-label';
+      statusLabel.textContent = 'Status';
+      statusGroup.appendChild(statusLabel);
+      statusGroup.appendChild(buildSegBar(r.status, STATUS_VAR, null, r.total));
+      row.appendChild(statusGroup);
+
+      el.appendChild(row);
+    });
+  }
+
+  renderLegend('legend-tipo', BREAKDOWN.tipo_order, TIPO_VAR, null, 'fill');
+  renderLegend('legend-status', BREAKDOWN.status_order, STATUS_VAR, null, 'outline');
+
+  // ---------- agregação client-side: recalcula os detalhamentos por
+  // Responsável / Motorista / Status a partir do conjunto de registros já
+  // filtrado pelo filtro principal (Dia / Ontem / Período + Filial do
+  // Motorista) — substitui os BREAKDOWN.* pré-calculados, que valiam só
+  // para o período completo. ----------
+  function groupBy(records, field) {
+    var map = {};
+    records.forEach(function (r) {
+      var key = r[field];
+      (map[key] || (map[key] = [])).push(r);
+    });
+    return map;
+  }
+  function orderedBreakdown(records, field, order) {
+    var counts = {};
+    records.forEach(function (r) { var v = r[field]; counts[v] = (counts[v] || 0) + 1; });
+    var result = [];
+    order.forEach(function (name) {
+      if (counts[name]) { result.push({ nome: name, qtd: counts[name] }); delete counts[name]; }
+    });
+    Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).forEach(function (name) {
+      result.push({ nome: name, qtd: counts[name] });
+    });
+    return result;
+  }
+  function freeBreakdown(records, field) {
+    var counts = {};
+    records.forEach(function (r) { var v = r[field]; counts[v] = (counts[v] || 0) + 1; });
+    return Object.keys(counts).map(function (name) { return { nome: name, qtd: counts[name] }; })
+      .sort(function (a, b) { return b.qtd - a.qtd; });
+  }
+  function aggregateGroupDetail(records, groupField, dims) {
+    var groups = groupBy(records, groupField);
+    var rows = Object.keys(groups).map(function (name) {
+      var recs = groups[name];
+      var row = { nome: name, total: recs.length };
+      dims.forEach(function (d) {
+        row[d.key] = d.order ? orderedBreakdown(recs, d.field, d.order) : freeBreakdown(recs, d.field);
+      });
+      return row;
+    });
+    rows.sort(function (a, b) { return b.total - a.total; });
+    return rows;
+  }
+
+  function populateSelect(selectEl, items) {
+    while (selectEl.firstChild) selectEl.removeChild(selectEl.firstChild);
+    var allOpt = document.createElement('option');
+    allOpt.value = '';
+    allOpt.textContent = 'Todos';
+    selectEl.appendChild(allOpt);
+    items.forEach(function (it) {
+      var opt = document.createElement('option');
+      opt.value = it.nome;
+      opt.textContent = it.nome + ' (' + it.total + ')';
+      selectEl.appendChild(opt);
+    });
+  }
+
+  var allRecords = DATA.all_records || DATA.ontem_records;
+  var currentFilteredRecords = allRecords;
+
+  // ---------- filtro principal: Dia / Ontem / Período + Filial do Motorista ----------
+  var periodButtons = Array.prototype.slice.call(document.querySelectorAll('.period-btn'));
+  var filialSelectEl = document.getElementById('filial-mot-filter');
+  var filialVeiSelectEl = document.getElementById('filial-vei-filter');
+  var filialEmiSelectEl = document.getElementById('filial-emi-filter');
+  var SEM_FILIAL = '__sem_filial__';
+  function normNome(n) { return String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toUpperCase(); }
+  // deslocamento criado pelo próprio motorista (PROGRAMADOR = MOTORISTA)
+  function criadoPeloMotorista(r) {
+    return String(r.tipo || '').toUpperCase() === 'DESLOCAMENTO' && r.programador && normNome(r.programador) === normNome(r.motorista);
+  }
+  var modeloSelectEl = document.getElementById('modelo-filter');
+  var filterBarNote = document.getElementById('filter-bar-note');
+  var currentPeriod = 'ontem';
+
+  var diaBtn = document.querySelector('.period-btn[data-period="dia"]');
+  var ontemBtn = document.querySelector('.period-btn[data-period="ontem"]');
+  if (diaBtn) diaBtn.textContent = 'Dia' + (hojeDateStr ? ' (' + shortBrDate(hojeDateStr) + ')' : '');
+  if (ontemBtn) ontemBtn.textContent = 'Ontem' + (ontemDateStr ? ' (' + shortBrDate(ontemDateStr) + ')' : '');
+
+  var filialValues = {};
+  allRecords.forEach(function (r) { if (r.filial_motorista) filialValues[r.filial_motorista] = true; });
+  Object.keys(filialValues).sort().forEach(function (f) {
+    var opt = document.createElement('option');
+    opt.value = f;
+    opt.textContent = f;
+    filialSelectEl.appendChild(opt);
+  });
+
+  var filialEmiValues = {}, temSemFilialEmi = false;
+  allRecords.forEach(function (r) {
+    if (criadoPeloMotorista(r)) return;
+    if (r.filial_programador) filialEmiValues[r.filial_programador] = true; else temSemFilialEmi = true;
+  });
+  Object.keys(filialEmiValues).sort().forEach(function (f) {
+    var opt = document.createElement('option');
+    opt.value = f;
+    opt.textContent = f;
+    filialEmiSelectEl.appendChild(opt);
+  });
+  if (temSemFilialEmi) {
+    var optSem = document.createElement('option');
+    optSem.value = SEM_FILIAL;
+    optSem.textContent = '(sem filial)';
+    filialEmiSelectEl.appendChild(optSem);
+  }
+
+  var filialVeiValues = {};
+  allRecords.forEach(function (r) { if (r.filial_veiculo) filialVeiValues[r.filial_veiculo] = true; });
+  Object.keys(filialVeiValues).sort().forEach(function (f) {
+    var opt = document.createElement('option');
+    opt.value = f;
+    opt.textContent = f;
+    filialVeiSelectEl.appendChild(opt);
+  });
+
+  var modeloValues = {};
+  allRecords.forEach(function (r) { if (r.modelo) modeloValues[r.modelo] = true; });
+  Object.keys(modeloValues).sort().forEach(function (f) {
+    var opt = document.createElement('option');
+    opt.value = f;
+    opt.textContent = f;
+    modeloSelectEl.appendChild(opt);
+  });
+
+  function filterByPeriod(records, period) {
+    if (period === 'periodo') return records;
+    if (period === 'dia') {
+      return hojeDateStr ? records.filter(function (r) { return recordDateStr(r) === hojeDateStr; }) : [];
+    }
+    return ontemDateStr ? records.filter(function (r) { return recordDateStr(r) === ontemDateStr; }) : records;
+  }
+  function periodLabel(period) {
+    if (period === 'dia') return 'Dia' + (hojeDateStr ? ' (' + hojeDateStr + ')' : '');
+    if (period === 'periodo') return 'Período completo';
+    return 'Ontem' + (ontemDateStr ? ' (' + ontemDateStr + ')' : '');
+  }
+
+  // ---------- filtro: Por Responsável — mostra os registros do conjunto filtrado ----------
+  var respSelectEl = document.getElementById('resp-filter');
+  var respTbody = document.getElementById('resp-detail-tbody');
+  var respPlaceholder = document.getElementById('resp-detail-placeholder');
+  var respTableWrap = document.getElementById('resp-detail-table-wrap');
+
+  function renderRespDetail(nome) {
+    while (respTbody.firstChild) respTbody.removeChild(respTbody.firstChild);
+    if (!nome) {
+      respPlaceholder.hidden = false;
+      respTableWrap.hidden = true;
+      return;
+    }
+    var rows = currentFilteredRecords.filter(function (r) { return r.programador === nome; });
+    rows.forEach(function (r) {
+      var tr = document.createElement('tr');
+      [r.id, tipoCurto(r.tipo), r.placa, r.modelo, r.motorista, r.filial_veiculo, r.filial_motorista, r.cidade_origem, r.cidade_destino, inicioCurto(r.data_inicio), r.status].forEach(function (val) {
+        var td = document.createElement('td');
+        td.textContent = val == null ? '' : String(val);
+        tr.appendChild(td);
+      });
+      respTbody.appendChild(tr);
+    });
+    buildColumnFilters(respTbody);
+    respPlaceholder.hidden = true;
+    respTableWrap.hidden = false;
+  }
+
+  respSelectEl.addEventListener('change', function () {
+    renderRespDetail(respSelectEl.value);
+  });
+
+  // ---------- filtro: Por Motorista — mostra os registros do conjunto filtrado ----------
+  var motSelectEl = document.getElementById('mot-filter');
+  var motTbody = document.getElementById('mot-detail-tbody');
+  var motPlaceholder = document.getElementById('mot-detail-placeholder');
+  var motTableWrap = document.getElementById('mot-detail-table-wrap');
+
+  function renderMotDetail(nome) {
+    while (motTbody.firstChild) motTbody.removeChild(motTbody.firstChild);
+    if (!nome) {
+      motPlaceholder.hidden = false;
+      motTableWrap.hidden = true;
+      return;
+    }
+    var rows = currentFilteredRecords.filter(function (r) { return r.motorista === nome; });
+    rows.forEach(function (r) {
+      var tr = document.createElement('tr');
+      [r.id, tipoCurto(r.tipo), r.placa, r.modelo, r.programador, r.filial_veiculo, r.filial_motorista, r.cidade_origem, r.cidade_destino, inicioCurto(r.data_inicio), r.status].forEach(function (val) {
+        var td = document.createElement('td');
+        td.textContent = val == null ? '' : String(val);
+        tr.appendChild(td);
+      });
+      motTbody.appendChild(tr);
+    });
+    buildColumnFilters(motTbody);
+    motPlaceholder.hidden = true;
+    motTableWrap.hidden = false;
+  }
+
+  motSelectEl.addEventListener('change', function () {
+    renderMotDetail(motSelectEl.value);
+  });
+
+  // ---------- filtro: Por Status — mostra os registros do conjunto filtrado ----------
+  var statusSelectEl = document.getElementById('status-filter');
+  var statusTbody = document.getElementById('status-detail-tbody');
+  var statusPlaceholder = document.getElementById('status-detail-placeholder');
+  var statusTableWrap = document.getElementById('status-detail-table-wrap');
+
+  function renderStatusDetail(nome) {
+    while (statusTbody.firstChild) statusTbody.removeChild(statusTbody.firstChild);
+    if (!nome) {
+      statusPlaceholder.hidden = false;
+      statusTableWrap.hidden = true;
+      return;
+    }
+    var rows = currentFilteredRecords.filter(function (r) { return r.status === nome; });
+    rows.forEach(function (r) {
+      var tr = document.createElement('tr');
+      [r.id, tipoCurto(r.tipo), r.placa, r.modelo, r.programador, r.motorista, r.filial_veiculo, r.filial_motorista, r.cidade_origem, r.cidade_destino, inicioCurto(r.data_inicio)].forEach(function (val) {
+        var td = document.createElement('td');
+        td.textContent = val == null ? '' : String(val);
+        tr.appendChild(td);
+      });
+      statusTbody.appendChild(tr);
+    });
+    buildColumnFilters(statusTbody);
+    statusPlaceholder.hidden = true;
+    statusTableWrap.hidden = false;
+  }
+
+  statusSelectEl.addEventListener('change', function () {
+    renderStatusDetail(statusSelectEl.value);
+  });
+
+  // ---------- aplica o filtro principal: recalcula KPIs, legendas de volume,
+  // as 3 seções e repopula os filtros de cada seção a partir do conjunto filtrado ----------
+  function applyGlobalFilter() {
+    var byPeriod = filterByPeriod(allRecords, currentPeriod);
+    var modelo = modeloSelectEl.value;
+    var filialVei = filialVeiSelectEl.value;
+    var filial = filialSelectEl.value;
+    var filialEmi = filialEmiSelectEl.value;
+    currentFilteredRecords = byPeriod.filter(function (r) {
+      if (filialEmi) {
+        if (criadoPeloMotorista(r)) return false;
+        if (filialEmi === SEM_FILIAL ? !!r.filial_programador : r.filial_programador !== filialEmi) return false;
+      }
+      return (!modelo || r.modelo === modelo) && (!filialVei || r.filial_veiculo === filialVei) && (!filial || r.filial_motorista === filial);
+    });
+
+    var progSet = {}, motSet = {}, filSet = {};
+    currentFilteredRecords.forEach(function (r) {
+      if (r.programador) progSet[r.programador] = true;
+      if (r.motorista) motSet[r.motorista] = true;
+      if (r.filial_motorista) filSet[r.filial_motorista] = true;
+    });
+    setText('kpi-total', currentFilteredRecords.length);
+    setText('kpi-prog', Object.keys(progSet).length);
+    setText('kpi-mot', Object.keys(motSet).length);
+    setText('kpi-filiais', Object.keys(filSet).length);
+
+    if (filterBarNote) {
+      filterBarNote.textContent = 'Exibindo: ' + periodLabel(currentPeriod) +
+        (filialEmi ? ' · Fil.Emissão: ' + (filialEmi === SEM_FILIAL ? '(sem filial)' : filialEmi) + ' (sem deslocamentos criados pelo motorista)' : '') +
+        (filialVei ? ' · Fil. Veículo: ' + filialVei : '') +
+        (filial ? ' · Fil. Motorista: ' + filial : '') +
+        (modelo ? ' · Modelo: ' + modelo : '') +
+        ' — ' + currentFilteredRecords.length + ' atendimento(s).';
+    }
+
+    var tipoDim = { key: 'tipo', field: 'tipo', order: BREAKDOWN.tipo_order };
+    var statusDim = { key: 'status', field: 'status', order: BREAKDOWN.status_order };
+    var progFreeDim = { key: 'prog', field: 'programador', order: null };
+
+    var progDetail = aggregateGroupDetail(currentFilteredRecords, 'programador', [tipoDim, statusDim]);
+    var motDetail = aggregateGroupDetail(currentFilteredRecords, 'motorista', [tipoDim, statusDim]);
+    var statusDetail = aggregateGroupDetail(currentFilteredRecords, 'status', [tipoDim, progFreeDim]);
+
+    renderBreakdown('bk-resp', progDetail);
+    renderBreakdown('bk-mot', motDetail);
+    renderStatusBreakdown('bk-status', statusDetail);
+
+    populateSelect(respSelectEl, progDetail);
+    populateSelect(motSelectEl, motDetail);
+    populateSelect(statusSelectEl, statusDetail);
+    renderRespDetail('');
+    renderMotDetail('');
+    renderStatusDetail('');
+  }
+
+  periodButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (btn.classList.contains('is-active')) return;
+      periodButtons.forEach(function (b) { b.classList.remove('is-active'); });
+      btn.classList.add('is-active');
+      currentPeriod = btn.getAttribute('data-period');
+      applyGlobalFilter();
+    });
+  });
+  filialSelectEl.addEventListener('change', applyGlobalFilter);
+  filialVeiSelectEl.addEventListener('change', applyGlobalFilter);
+  filialEmiSelectEl.addEventListener('change', applyGlobalFilter);
+  modeloSelectEl.addEventListener('change', applyGlobalFilter);
+  document.getElementById('clear-filters').addEventListener('click', function () {
+    filialEmiSelectEl.value = '';
+    filialVeiSelectEl.value = '';
+    filialSelectEl.value = '';
+    modeloSelectEl.value = '';
+    currentPeriod = 'ontem';
+    periodButtons.forEach(function (b) { b.classList.toggle('is-active', b.getAttribute('data-period') === 'ontem'); });
+    applyGlobalFilter();
+  });
+
+  applyGlobalFilter();
+
+  // ---------- regra001 ----------
+  // Motoristas com atendimento em status "Programada" cuja DATA DE INÍCIO já
+  // passou há pelo menos 15 minutos (o motorista deveria ter mudado o status
+  // no APP para Aceito / Deslocamento). Hora atual calculada no fuso de São
+  // Paulo, igual à DATA DE INÍCIO do Koepe. Reavaliada a cada minuto.
+  (function regra001() {
+    var LIMITE_MIN = 15;
+    var PISCAR = true;          // banner pisca enquanto a lista estiver fechada
+    // números vêm do arquivo 'lista programador whatsapp' (PROGRAMADOR -> número)
+    var WHATS_LISTA = DATA.whatsapp || {};
+    var sendList = document.getElementById('regra001-send-list');
+    var ultimoPorMot = {}, ultimoHoje = '';
+    var banner = document.getElementById('regra001');
+    var body = document.getElementById('regra001-body');
+    var countEl = document.getElementById('regra001-count');
+    var toggleBtn = document.getElementById('regra001-toggle');
+    var closeBtn = document.getElementById('regra001-close');
+    var fechado = false;
+
+    function agoraSP() {
+      var parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      }).formatToParts(new Date());
+      var p = {};
+      parts.forEach(function (x) { p[x.type] = x.value; });
+      return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute);
+    }
+    function inicioMs(s) {
+      var m = /^(\d{2})\/(\d{2})\/(\d{4})\D*(\d{2}):(\d{2})/.exec(s || '');
+      return m ? Date.UTC(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]) : null;
+    }
+    function fmtAtraso(min) {
+      var d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60), mm = min % 60;
+      var hhmm = String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+      return d >= 1 ? d + 'd ' + hhmm : hhmm;
+    }
+    // PROGRAMADOR encurtado: primeiro + último nome (nome completo no tooltip)
+    function nomeCurto(n) {
+      n = (n || '').trim();
+      if (n.indexOf('@') !== -1) return n.split('@')[0];
+      var p = n.split(/\s+/).filter(function (x) { return x && x !== '-'; });
+      return p.length > 2 ? p[0] + ' ' + p[p.length - 1] : n;
+    }
+    function cell(tr, txt, cls) {
+      var td = document.createElement('td');
+      td.textContent = txt == null ? '' : String(txt);
+      if (cls) td.className = cls;
+      tr.appendChild(td);
+    }
+
+    function avaliar() {
+      var agora = agoraSP();
+      // só registros do DIA (data de início = hoje, fuso de São Paulo)
+      var hd = new Date(agora);
+      var hojeStr = String(hd.getUTCDate()).padStart(2, '0') + '/' +
+        String(hd.getUTCMonth() + 1).padStart(2, '0') + '/' + hd.getUTCFullYear();
+      var porMot = {};
+      allRecords.forEach(function (r) {
+        if ((r.status || '').toLowerCase() !== 'programada') return;
+        if (recordDateStr(r) !== hojeStr) return;
+        var ini = inicioMs(r.data_inicio);
+        if (ini === null) return;
+        var atraso = Math.floor((agora - ini) / 60000);
+        if (atraso < LIMITE_MIN) return;
+        var key = r.motorista || '(sem motorista)';
+        (porMot[key] || (porMot[key] = [])).push({ r: r, atraso: atraso });
+      });
+      var nomes = Object.keys(porMot);
+      if (!nomes.length) {
+        banner.hidden = true;
+        document.body.classList.remove('has-alert');
+        return;
+      }
+      // motorista com o maior atraso primeiro
+      nomes.forEach(function (n) { porMot[n].sort(function (a, b) { return b.atraso - a.atraso; }); });
+      nomes.sort(function (a, b) { return porMot[b][0].atraso - porMot[a][0].atraso; });
+
+      var totalServ = nomes.reduce(function (s, n) { return s + porMot[n].length; }, 0);
+      ultimoPorMot = porMot; ultimoHoje = hojeStr;
+      montarEnvios();
+      countEl.textContent = 'Hoje (' + hojeStr.slice(0, 5) + ') · ' + nomes.length + ' motorista(s) · ' + totalServ + ' serviço(s)';
+
+      while (body.firstChild) body.removeChild(body.firstChild);
+      // uma única tabela para todos os motoristas: colunas sempre alinhadas
+      var COLS = ['Nr ID', 'Tipo', 'Placa', 'Prog.', 'Data de início', 'Atraso', 'Cid.Org', 'Cid.Dest'];
+      var WIDTHS = ['8%', '8%', '9%', '15%', '13%', '8%', '20%', '19%'];
+      var wrap = document.createElement('div');
+      wrap.className = 'alert-table-wrap';
+      var tb = document.createElement('table');
+      tb.className = 'alert-table';
+      var cg = document.createElement('colgroup');
+      WIDTHS.forEach(function (w) { var c = document.createElement('col'); c.style.width = w; cg.appendChild(c); });
+      tb.appendChild(cg);
+      var thead = document.createElement('thead');
+      var hr = document.createElement('tr');
+      COLS.forEach(function (h) { var th = document.createElement('th'); th.textContent = h; hr.appendChild(th); });
+      thead.appendChild(hr); tb.appendChild(thead);
+      var tbody = document.createElement('tbody');
+      nomes.forEach(function (n) {
+        var gr = document.createElement('tr');
+        gr.className = 'alert-group';
+        var gtd = document.createElement('td');
+        gtd.colSpan = COLS.length;
+        gtd.textContent = n + ' ';
+        var qt = document.createElement('span');
+        qt.textContent = '(' + porMot[n].length + ' serviço(s))';
+        gtd.appendChild(qt);
+        gr.appendChild(gtd);
+        tbody.appendChild(gr);
+        porMot[n].forEach(function (it) {
+          var tr = document.createElement('tr');
+          cell(tr, it.r.id);
+          cell(tr, tipoCurto(it.r.tipo));
+          cell(tr, it.r.placa);
+          cell(tr, nomeCurto(it.r.programador));
+          tr.lastChild.title = it.r.programador || '';
+          cell(tr, inicioCurto(it.r.data_inicio));
+          cell(tr, fmtAtraso(it.atraso), 'alert-late');
+          cell(tr, it.r.cidade_origem);
+          cell(tr, it.r.cidade_destino);
+          tbody.appendChild(tr);
+        });
+      });
+      tb.appendChild(tbody); wrap.appendChild(tb);
+      body.appendChild(wrap);
+      // pisca sempre que há alerta e a lista está fechada
+      banner.classList.toggle('is-blinking', PISCAR && body.hidden);
+      if (!fechado) {
+        banner.hidden = false;
+        document.body.classList.add('has-alert');
+      }
+    }
+
+    // ---------- envio pelo WhatsApp: 1 mensagem individual por programador ----------
+    function normNome(s) {
+      return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+    }
+    function numeroDe(prog) { return WHATS_LISTA[normNome(prog)] || null; }
+    function montarMensagem(prog) {
+      var agora = new Date(agoraSP());
+      var hhmm = String(agora.getUTCHours()).padStart(2, '0') + ':' + String(agora.getUTCMinutes()).padStart(2, '0');
+      var linhas = ['⚠️ *Atenção: Motoristas em atraso para início do serviço no APP*',
+        'Hoje (' + ultimoHoje.slice(0, 5) + ') · ' + hhmm + ' · Programador: ' + prog, ''];
+      Object.keys(ultimoPorMot).forEach(function (n) {
+        var its = ultimoPorMot[n].filter(function (it) { return it.r.programador === prog; });
+        if (!its.length) return;
+        linhas.push('*' + n + '* (' + its.length + ' serviço(s))');
+        its.forEach(function (it) {
+          linhas.push('• ID ' + it.r.id + ' | ' + tipoCurto(it.r.tipo) + ' | ' + (it.r.placa || '') +
+            ' | Início ' + inicioCurto(it.r.data_inicio) + ' | Atraso ' + fmtAtraso(it.atraso) +
+            ' | ' + (it.r.cidade_origem || '') + ' → ' + (it.r.cidade_destino || ''));
+        });
+        linhas.push('');
+      });
+      return linhas.join('\n').trim();
+    }
+    // Programadores já avisados nesta atualização do mural: somem da lista de envio
+    // depois que o administrador confirma o envio e só voltam na próxima
+    // atualização (versão nova da página). Guardado no navegador do administrador.
+    var VERSAO = '09/10/2026 às 15:04';
+    var CHAVE_ENVIADOS = 'regra001-enviados:' + VERSAO;
+    var enviados = {};
+    try { enviados = JSON.parse(localStorage.getItem(CHAVE_ENVIADOS) || '{}') || {}; } catch (e) { enviados = {}; }
+    function marcarEnviado(p) {
+      enviados[p] = true;
+      try {
+        // limpa marcações de versões antigas e grava a atual
+        for (var i = localStorage.length - 1; i >= 0; i--) {
+          var k = localStorage.key(i);
+          if (k && k.indexOf('regra001-enviados:') === 0 && k !== CHAVE_ENVIADOS) localStorage.removeItem(k);
+        }
+        localStorage.setItem(CHAVE_ENVIADOS, JSON.stringify(enviados));
+      } catch (e) { /* sem armazenamento: vale até fechar a página */ }
+    }
+    var pendente = null;   // programador cujo WhatsApp foi aberto e aguarda confirmação
+
+    function montarEnvios() {
+      var cont = {};
+      Object.keys(ultimoPorMot).forEach(function (n) {
+        ultimoPorMot[n].forEach(function (it) { var p = it.r.programador || '(sem programador)'; cont[p] = (cont[p] || 0) + 1; });
+      });
+      while (sendList.firstChild) sendList.removeChild(sendList.firstChild);
+      var qtdEnviados = 0;
+      Object.keys(cont).sort().forEach(function (p) {
+        if (enviados[p]) { qtdEnviados++; return; }
+        var num = numeroDe(p);
+        if (pendente === p) {
+          var box = document.createElement('span');
+          box.className = 'alert-confirm';
+          box.appendChild(document.createTextNode('Mensagem para ' + nomeCurto(p) + ' foi enviada? '));
+          var sim = document.createElement('button');
+          sim.type = 'button'; sim.className = 'alert-btn alert-yes'; sim.textContent = 'Sim, enviei';
+          sim.addEventListener('click', function () { marcarEnviado(p); pendente = null; montarEnvios(); });
+          var nao = document.createElement('button');
+          nao.type = 'button'; nao.className = 'alert-btn'; nao.textContent = 'Não';
+          nao.addEventListener('click', function () { pendente = null; montarEnvios(); });
+          box.appendChild(sim); box.appendChild(nao);
+          sendList.appendChild(box);
+        } else if (num) {
+          var a = document.createElement('a');
+          a.className = 'alert-btn alert-wa';
+          a.target = '_blank'; a.rel = 'noopener';
+          a.textContent = nomeCurto(p) + ' (' + cont[p] + ')';
+          a.title = 'Enviar para ' + p + ' — abre o WhatsApp com a mensagem pronta; confira e toque em Enviar';
+          a.href = 'https://wa.me/' + num + '?text=' + encodeURIComponent(montarMensagem(p));
+          a.addEventListener('click', function () {
+            a.href = 'https://wa.me/' + num + '?text=' + encodeURIComponent(montarMensagem(p));
+            // depois de abrir o WhatsApp, pergunta se a mensagem foi enviada
+            setTimeout(function () { pendente = p; montarEnvios(); }, 300);
+          });
+          sendList.appendChild(a);
+        } else {
+          var s = document.createElement('span');
+          s.className = 'alert-nowa';
+          s.textContent = nomeCurto(p) + ' (' + cont[p] + ') — não consta na lista de WhatsApp, não enviado';
+          s.title = p;
+          sendList.appendChild(s);
+        }
+      });
+      if (qtdEnviados) {
+        var info = document.createElement('span');
+        info.className = 'alert-sent-info';
+        info.textContent = '✓ ' + qtdEnviados + ' programador(es) já avisado(s) nesta atualização';
+        sendList.appendChild(info);
+      }
+    }
+    // envio pelo WhatsApp: visível só para o administrador (dono) do mural
+    (async function () {
+      try {
+        var u = (window.claude && window.claude.use) ? await window.claude.use('user') : null;
+        if (u && await u.isOwner()) document.getElementById('regra001-send').hidden = false;
+      } catch (e) { /* sem identificação: mantém oculto */ }
+    })();
+
+    toggleBtn.addEventListener('click', function () {
+      body.hidden = !body.hidden;
+      toggleBtn.textContent = body.hidden ? 'Ver lista' : 'Ocultar lista';
+      banner.classList.toggle('is-open', !body.hidden);
+      // lista aberta: para de piscar; lista fechada (volta à página): pisca de novo
+      banner.classList.toggle('is-blinking', PISCAR && body.hidden);
+    });
+    closeBtn.addEventListener('click', function () {
+      fechado = true;
+      banner.hidden = true;
+      document.body.classList.remove('has-alert');
+    });
+
+    avaliar();
+    setInterval(avaliar, 60000);
+  })();
+
+})();
+</script>
+
+</body></html>
